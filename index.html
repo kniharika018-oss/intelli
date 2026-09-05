@@ -3,1185 +3,905 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Aroghya | AI Stress & Welfare Monitoring</title>
-
+    <title>Aroghya | AI-Based Employee Stress & Welfare Monitoring System</title>
+    <meta name="description" content="AI-Powered Platform for Real-Time Employee Stress, Posture, and Welfare Monitoring integrating trained machine learning models and computer vision.">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<!-- =========================
+<!-- =====================================================
      LANDING PAGE
-========================= -->
-
+===================================================== -->
 <section id="landingPage" class="page landing-page">
-
     <div class="landing-card">
-
         <div class="logo">AROGHYA</div>
-
-        <h1>AI-Based Predictive Personnel Stress & Welfare Monitoring</h1>
-
+        <div class="badge-tag">AI-Powered Personnel Health & Welfare</div>
+        <h1>AI-Based Employee Stress & Welfare Monitoring System</h1>
         <p>
-            An AI-powered platform for early stress-risk detection
-            and preventive welfare support for uniformed forces.
+            An enterprise-grade platform combining calibrated machine learning with real-time
+            computer vision for proactive stress detection, ergonomic posture assessment, and preventive welfare support.
         </p>
 
         <div class="landing-buttons">
-
             <button class="btn primary-btn" onclick="showPage('employeeLoginPage')">
-                Employee Login
+                👤 Employee Portal
             </button>
-
             <button class="btn authority-btn" onclick="showPage('authorityLoginPage')">
-                Health Authority Login
+                🏥 Health Authority Login
             </button>
-
         </div>
 
         <div class="register-links">
-
-            <button onclick="showPage('employeeRegisterPage')">
-                New Employee Registration
-            </button>
-
-            <button onclick="showPage('authorityRegisterPage')">
-                New Authority Registration
-            </button>
-
+            <button onclick="showPage('employeeRegisterPage')">New Employee Registration</button>
+            <span>•</span>
+            <button onclick="showPage('authorityRegisterPage')">Health Authority Registration</button>
         </div>
-
     </div>
-
 </section>
 
 
-<!-- =========================
+<!-- =====================================================
      EMPLOYEE REGISTRATION
-========================= -->
-
+===================================================== -->
 <section id="employeeRegisterPage" class="page hidden">
-
     <div class="form-container">
-
         <div class="form-card">
-
             <div class="logo small-logo">AROGHYA</div>
-
             <h2>Employee Registration</h2>
-
             <p class="subtitle">
-                Create your personal account. Registration is required only once.
+                Create your confidential personnel account. Registration is required only once.
             </p>
 
             <div id="employeeRegisterMessage"></div>
 
             <form id="employeeRegisterForm">
+                <label for="employeeName">Full Name</label>
+                <input type="text" id="employeeName" placeholder="e.g. Zinka Pranavi" required>
 
-                <label>Full Name</label>
+                <label for="employeeEmail">Email ID</label>
+                <input type="email" id="employeeEmail" placeholder="e.g. pranavi@gmail.com" required>
 
-                <input
-                    type="text"
-                    id="employeeName"
-                    placeholder="Zinka Pranavi"
-                    required
-                >
+                <label for="employeeId">Employee ID</label>
+                <input type="text" id="employeeId" placeholder="e.g. pranaviR8" required>
 
-                <label>Email ID</label>
+                <label for="employeePassword">Password</label>
+                <input type="password" id="employeePassword" placeholder="Enter secure password" required minlength="6">
 
-                <input
-                    type="email"
-                    id="employeeEmail"
-                    placeholder="pranavi@gmail.com"
-                    required
-                >
-
-                <label>Employee ID</label>
-
-                <input
-                    type="text"
-                    id="employeeId"
-                    placeholder="pranaviR8"
-                    required
-                >
-
-                <label>Password</label>
-
-                <input
-                    type="password"
-                    id="employeePassword"
-                    placeholder="Enter password"
-                    required
-                >
-
-                <label>Confirm Password</label>
-
-                <input
-                    type="password"
-                    id="employeeConfirmPassword"
-                    placeholder="Confirm password"
-                    required
-                >
+                <label for="employeeConfirmPassword">Confirm Password</label>
+                <input type="password" id="employeeConfirmPassword" placeholder="Confirm password" required>
 
                 <button class="btn primary-btn full-btn" type="submit">
-                    Create Account
+                    Create Employee Account
                 </button>
-
             </form>
 
-            <button
-                class="back-btn"
-                onclick="showPage('employeeLoginPage')">
-
-                Already registered? Sign In
-
-            </button>
-
-            <button
-                class="back-btn"
-                onclick="showPage('landingPage')">
-
-                ← Back
-
-            </button>
-
+            <div class="auth-switch-box">
+                <button class="back-btn" onclick="showPage('employeeLoginPage')">
+                    Already registered? Sign In
+                </button>
+                <button class="back-btn" onclick="showPage('landingPage')">
+                    ← Back to Home
+                </button>
+            </div>
         </div>
-
     </div>
-
 </section>
 
 
-<!-- =========================
+<!-- =====================================================
      EMPLOYEE LOGIN
-========================= -->
-
+===================================================== -->
 <section id="employeeLoginPage" class="page hidden">
-
     <div class="form-container">
-
         <div class="form-card">
-
             <div class="logo small-logo">AROGHYA</div>
-
             <h2>Employee Sign In</h2>
-
             <p class="subtitle">
-                Sign in using your Email ID or Employee ID.
+                Secure access to your personal stress telemetry, trends, and welfare recommendations.
             </p>
 
             <div id="employeeLoginMessage"></div>
 
             <form id="employeeLoginForm">
+                <label for="employeeLoginId">Email ID or Employee ID</label>
+                <input type="text" id="employeeLoginId" placeholder="e.g. pranavi@gmail.com or pranaviR8" required>
 
-                <label>Email ID / Employee ID</label>
-
-                <input
-                    type="text"
-                    id="employeeLoginId"
-                    placeholder="pranavi@gmail.com or pranaviR8"
-                    required
-                >
-
-                <label>Password</label>
-
-                <input
-                    type="password"
-                    id="employeeLoginPassword"
-                    placeholder="Enter password"
-                    required
-                >
+                <label for="employeeLoginPassword">Password</label>
+                <input type="password" id="employeeLoginPassword" placeholder="Enter password" required>
 
                 <button class="btn primary-btn full-btn" type="submit">
-                    Sign In
+                    Sign In to Portal
                 </button>
-
             </form>
 
-            <button
-                class="back-btn"
-                onclick="showPage('employeeRegisterPage')">
-
-                New Employee? Register
-
-            </button>
-
-            <button
-                class="back-btn"
-                onclick="showPage('landingPage')">
-
-                ← Back
-
-            </button>
-
+            <div class="auth-switch-box">
+                <button class="back-btn" onclick="showPage('employeeRegisterPage')">
+                    New Employee? Register
+                </button>
+                <button class="back-btn" onclick="showPage('landingPage')">
+                    ← Back to Home
+                </button>
+            </div>
         </div>
-
     </div>
-
 </section>
 
 
-<!-- =========================
+<!-- =====================================================
      EMPLOYEE DASHBOARD
-========================= -->
-
+===================================================== -->
 <section id="employeeDashboardPage" class="page hidden">
-
     <nav class="navbar">
-
-        <div class="nav-logo">AROGHYA</div>
-
+        <div class="nav-logo">AROGHYA <span>| Employee Welfare</span></div>
         <div class="nav-right">
-
-            <span id="navEmployeeName"></span>
-
-            <button class="logout-btn" onclick="logout()">
-                Logout
-            </button>
-
+            <span class="user-greeting">👤 <strong id="navEmployeeName">Employee</strong></span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
-
     </nav>
-
 
     <main class="dashboard">
 
-        <!-- WELCOME -->
-
+        <!-- WELCOME BANNER -->
         <div class="welcome-card">
-
-            <h1>
-                Welcome, <span id="welcomeName"></span> 👋
-            </h1>
-
-            <p>
-                <strong><em>
-                    "Stress is a warning, not a weakness"
-                </em></strong>
-            </p>
-
+            <div>
+                <h1>Welcome, <span id="welcomeName">Colleague</span> 👋</h1>
+                <p><em>"Stress is an early signal, not a weakness. Continuous monitoring preserves long-term wellbeing."</em></p>
+            </div>
+            <div class="system-status-pill">
+                <span class="pulse-dot"></span> AI Engine Active
+            </div>
         </div>
 
-
-        <!-- PROFILE -->
-
-        <div class="card">
-
+        <!-- PERSONAL PROFILE CARD -->
+        <div class="card profile-card">
             <div class="section-title">
                 <span>👤</span>
                 <h2>Personal Profile</h2>
             </div>
-
             <div class="profile-grid">
-
                 <div>
-                    <span>Name</span>
-                    <strong id="profileName"></strong>
+                    <span class="label">Full Name</span>
+                    <strong id="profileName">--</strong>
                 </div>
-
                 <div>
-                    <span>Email</span>
-                    <strong id="profileEmail"></strong>
+                    <span class="label">Work Email</span>
+                    <strong id="profileEmail">--</strong>
                 </div>
-
                 <div>
-                    <span>Employee ID</span>
-                    <strong id="profileEmployeeId"></strong>
+                    <span class="label">Employee ID</span>
+                    <strong id="profileEmployeeId">--</strong>
                 </div>
-
+                <div>
+                    <span class="label">Welfare Status</span>
+                    <strong id="profileWelfareStatus" class="status-pill status-optimal">Optimal</strong>
+                </div>
             </div>
-
         </div>
 
+        <!-- RISK ALERT BANNER (Shown dynamically when stress is elevated) -->
+        <div id="employeeRiskBanner" class="risk-banner hidden">
+            <div class="risk-icon" id="riskBannerIcon">⚠️</div>
+            <div class="risk-details">
+                <h3 id="riskBannerTitle">HIGH STRESS – ATTENTION REQUIRED</h3>
+                <p id="riskBannerDesc">Elevated stress markers detected. Please consult recommendations below and take restorative pauses.</p>
+            </div>
+        </div>
 
-        <!-- TODAY STATUS -->
-
+        <!-- STEP 1: TODAY'S STATUS QUESTIONNAIRE -->
         <div id="todayStatusCard" class="card">
-
             <div class="section-title">
                 <span>📋</span>
-                <h2>Today's Status</h2>
+                <h2>Step 1: Daily Wellness Assessment</h2>
             </div>
-
             <p class="section-description">
-                Answer these basic questions about your current condition.
+                Please complete these daily indicators. Combined with your real-time webcam signals, our trained AI model evaluates stress risk.
             </p>
-
 
             <form id="basicStatusForm">
-
-                <div class="input-group">
-
-                    <label>
-                        How was your sleep last night?
-                    </label>
-
-                    <select id="sleepQuality" required>
-
-                        <option value="">
-                            Select
-                        </option>
-
-                        <option value="1">
-                            Poor
-                        </option>
-
-                        <option value="2">
-                            Average
-                        </option>
-
-                        <option value="3">
-                            Good
-                        </option>
-
-                        <option value="4">
-                            Very Good
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="input-group">
-
-                    <label>
-                        How many hours did you work today?
-                    </label>
-
-                    <input
-                        type="number"
-                        id="dutyHours"
-                        min="0"
-                        max="24"
-                        step="0.5"
-                        placeholder="Example: 8"
-                        required
-                    >
-
-                </div>
-
-
-                <div class="input-group">
-
-                    <label>
-                        How is your mood today?
-                    </label>
-
-                    <select id="mood" required>
-
-                        <option value="">
-                            Select
-                        </option>
-
-                        <option value="1">
-                            Very Low
-                        </option>
-
-                        <option value="2">
-                            Low
-                        </option>
-
-                        <option value="3">
-                            Neutral
-                        </option>
-
-                        <option value="4">
-                            Good
-                        </option>
-
-                        <option value="5">
-                            Very Good
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="input-group">
-
-                    <label>
-                        How is your energy level?
-                    </label>
-
-                    <div class="range-row">
-
-                        <input
-                            type="range"
-                            id="energy"
-                            min="0"
-                            max="100"
-                            value="50"
-                        >
-
-                        <span id="energyValue">
-                            50%
-                        </span>
-
+                <div class="form-row-2">
+                    <div class="input-group">
+                        <label for="sleepQuality">How was your sleep last night?</label>
+                        <select id="sleepQuality" required>
+                            <option value="">Select sleep quality</option>
+                            <option value="1">Poor (Under 5 hours, interrupted)</option>
+                            <option value="2">Average (5-6 hours)</option>
+                            <option value="3" selected>Good (7-8 hours restful)</option>
+                            <option value="4">Very Good (8+ hours deep sleep)</option>
+                        </select>
                     </div>
 
+                    <div class="input-group">
+                        <label for="dutyHours">Duty Hours Worked Today</label>
+                        <input type="number" id="dutyHours" min="0" max="24" step="0.5" value="8" placeholder="e.g. 8" required>
+                    </div>
                 </div>
 
-
-                <div class="input-group">
-
-                    <label>
-                        How heavy is your workload?
-                    </label>
-
-                    <select id="workload" required>
-
-                        <option value="">
-                            Select
-                        </option>
-
-                        <option value="1">
-                            Low
-                        </option>
-
-                        <option value="2">
-                            Moderate
-                        </option>
-
-                        <option value="3">
-                            High
-                        </option>
-
-                        <option value="4">
-                            Very High
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="input-group">
-
-                    <label>
-                        How stressed do you currently feel?
-                    </label>
-
-                    <div class="range-row">
-
-                        <input
-                            type="range"
-                            id="selfStress"
-                            min="0"
-                            max="100"
-                            value="30"
-                        >
-
-                        <span id="stressValue">
-                            30%
-                        </span>
-
+                <div class="form-row-2">
+                    <div class="input-group">
+                        <label for="mood">Emotional State / Mood Today</label>
+                        <select id="mood" required>
+                            <option value="">Select mood</option>
+                            <option value="1">Very Low / Drained</option>
+                            <option value="2">Low / Anxious</option>
+                            <option value="3" selected>Neutral / Balanced</option>
+                            <option value="4">Good / Energetic</option>
+                            <option value="5">Very Good / Positive</option>
+                        </select>
                     </div>
 
+                    <div class="input-group">
+                        <label for="workload">Current Workload & Deadlines</label>
+                        <select id="workload" required>
+                            <option value="">Select workload level</option>
+                            <option value="1">Low / Manageable pace</option>
+                            <option value="2" selected>Moderate / Standard pace</option>
+                            <option value="3">High / Tight deadlines</option>
+                            <option value="4">Critical / Severe overload</option>
+                        </select>
+                    </div>
                 </div>
 
+                <div class="form-row-2">
+                    <div class="input-group">
+                        <label for="energy">Subjective Energy Level: <span id="energyValue" class="highlight-val">50%</span></label>
+                        <input type="range" id="energy" min="0" max="100" value="50">
+                    </div>
 
-                <button
-                    class="btn primary-btn"
-                    type="submit">
+                    <div class="input-group">
+                        <label for="selfStress">Self-Perceived Stress: <span id="stressValue" class="highlight-val">30%</span></label>
+                        <input type="range" id="selfStress" min="0" max="100" value="30">
+                    </div>
+                </div>
 
-                    Continue →
-
+                <button class="btn primary-btn" type="submit">
+                    Proceed to Smartwatch & Camera Monitoring →
                 </button>
-
             </form>
-
         </div>
 
-
-        <!-- SMART WATCH -->
-
+        <!-- STEP 2: SMARTWATCH OPTION -->
         <div id="smartwatchCard" class="card hidden">
-
             <div class="watch-content">
-
-                <div class="watch-icon">
-                    ⌚
-                </div>
-
-                <h2>Do you have a Smartwatch?</h2>
-
+                <div class="watch-icon">⌚</div>
+                <h2>Do you have Smartwatch Telemetry?</h2>
                 <p>
-                    This step is optional. Wearable information can provide
-                    additional signals for stress-risk estimation.
+                    Wearable biometrics (heart rate, step counts, exact sleep duration) enhance model precision. This step is entirely optional.
                 </p>
-
                 <div class="watch-buttons">
-
-                    <button
-                        class="btn success-btn"
-                        onclick="showPermission()">
-
-                        Yes, I have one
-
+                    <button class="btn success-btn" onclick="showPermission()">
+                        Yes, Enter Watch Data
                     </button>
-
-                    <button
-                        class="btn secondary-btn"
-                        onclick="skipWatch()">
-
-                        No / Skip
-
+                    <button class="btn secondary-btn" onclick="skipWatch()">
+                        Skip / No Watch Available
                     </button>
-
                 </div>
-
             </div>
-
         </div>
 
-
-        <!-- PERMISSION -->
-
+        <!-- SMARTWATCH PERMISSION -->
         <div id="permissionCard" class="card hidden">
-
             <div class="watch-content">
-
-                <div class="permission-icon">
-                    🔐
-                </div>
-
-                <h2>Smartwatch Permission</h2>
-
+                <div class="permission-icon">🔐</div>
+                <h2>Smartwatch Telemetry Consent</h2>
                 <p>
-                    Allowing smartwatch information can provide additional
-                    wellness signals for the prediction.
+                    Authorizing smartwatch information securely supplements your monitoring session.
+                    All metrics remain confidential.
                 </p>
-
-                <p class="privacy-note">
-                    You can skip this step at any time.
-                </p>
-
-                <button
-                    class="btn success-btn"
-                    onclick="continueWatch()">
-
-                    Continue
-
-                </button>
-
-                <button
-                    class="btn secondary-btn"
-                    onclick="skipWatch()">
-
-                    Exit / Skip
-
-                </button>
-
+                <div class="watch-buttons">
+                    <button class="btn success-btn" onclick="continueWatch()">Continue</button>
+                    <button class="btn secondary-btn" onclick="skipWatch()">Skip Step</button>
+                </div>
             </div>
-
         </div>
 
-
-        <!-- EXTRA WATCH DATA -->
-
+        <!-- SMARTWATCH DATA INPUT -->
         <div id="watchDataCard" class="card hidden">
-
             <div class="section-title">
                 <span>⌚</span>
-                <h2>Additional Wellness Information</h2>
+                <h2>Smartwatch Sensor Inputs</h2>
             </div>
-
-            <p class="section-description">
-                Enter the available information from your smartwatch.
-            </p>
-
+            <p class="section-description">Enter wearable information recorded today.</p>
 
             <form id="watchDataForm">
-
-                <div class="input-group">
-
-                    <label>
-                        Average Heart Rate (BPM)
-                    </label>
-
-                    <input
-                        type="number"
-                        id="heartRate"
-                        min="30"
-                        max="220"
-                        placeholder="Example: 72"
-                        required
-                    >
-
+                <div class="form-row-2">
+                    <div class="input-group">
+                        <label for="heartRate">Average Resting Heart Rate (BPM)</label>
+                        <input type="number" id="heartRate" min="40" max="220" placeholder="e.g. 74" value="74" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="steps">Daily Step Count</label>
+                        <input type="number" id="steps" min="0" placeholder="e.g. 6800" value="6800" required>
+                    </div>
                 </div>
-
-
-                <div class="input-group">
-
-                    <label>
-                        Steps Per Day
-                    </label>
-
-                    <input
-                        type="number"
-                        id="steps"
-                        min="0"
-                        placeholder="Example: 7500"
-                        required
-                    >
-
+                <div class="form-row-2">
+                    <div class="input-group">
+                        <label for="sleepHours">Recorded Sleep Duration (Hours)</label>
+                        <input type="number" id="sleepHours" min="0" max="24" step="0.1" placeholder="e.g. 7.2" value="7.2" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="wearableStress">Watch Stress Index (%)</label>
+                        <input type="number" id="wearableStress" min="0" max="100" placeholder="e.g. 35" value="35" required>
+                    </div>
                 </div>
-
-
-                <div class="input-group">
-
-                    <label>
-                        Exact Sleep Hours
-                    </label>
-
-                    <input
-                        type="number"
-                        id="sleepHours"
-                        min="0"
-                        max="24"
-                        step="0.1"
-                        placeholder="Example: 6.5"
-                        required
-                    >
-
-                </div>
-
-
-                <div class="input-group">
-
-                    <label>
-                        Wearable Stress Estimate (%)
-                    </label>
-
-                    <input
-                        type="number"
-                        id="wearableStress"
-                        min="0"
-                        max="100"
-                        placeholder="Example: 55"
-                        required
-                    >
-
-                </div>
-
-
-                <button
-                    class="btn primary-btn"
-                    type="submit">
-
-                    Run AI Prediction 🤖
-
+                <button class="btn primary-btn" type="submit">
+                    Save Telemetry & Open Camera Monitoring →
                 </button>
-
             </form>
-
         </div>
 
-
-        <!-- PREDICTION -->
-
-        <div id="predictionCard" class="card hidden">
-
-            <div class="prediction-header">
-
-                <h2>Your Current Stress Status</h2>
-
-                <p>
-                    AI-based stress-risk estimation
-                </p>
-
+        <!-- STEP 3: REAL-TIME WEBCAM & COMPUTER VISION MONITORING -->
+        <div id="webcamCard" class="card hidden">
+            <div class="section-title">
+                <span>📹</span>
+                <h2>Step 2: Real-Time Biometric & Posture Monitoring</h2>
             </div>
-
-
-            <div
-                id="stressScore"
-                class="stress-score">
-
-                0%
-
-            </div>
-
-
-            <div
-                id="stressLevel"
-                class="stress-level">
-
-                LOW
-
-            </div>
-
-
-            <p
-                id="predictionText"
-                class="prediction-text">
+            <p class="section-description">
+                The webcam detects facial landmarks, blink rate, eye fatigue, head orientation, and postural slouching in real time.
+                <strong>The camera does NOT start automatically.</strong> Click <em>Start Monitoring</em> to begin.
             </p>
 
-
-            <div class="advice-box">
-
-                <h3>💡 Recommended Actions</h3>
-
-                <ul id="adviceList"></ul>
-
+            <!-- Permission Denied Guidance Banner -->
+            <div id="cameraPermissionAlert" class="error-banner hidden">
+                <strong>⚠️ Camera Permission Required:</strong>
+                Please allow camera access in your browser settings to enable biometric signal extraction.
+                If blocked, click the camera icon in your address bar and select "Always allow".
             </div>
 
-        </div>
-
-
-        <!-- BREATHING -->
-
-        <div id="breathingCard" class="card hidden">
-
-            <div class="breathing-content">
-
-                <h2>🌬️ 30-Second Breathing Exercise</h2>
-
-                <p>
-                    Follow the instructions to complete a short breathing exercise.
-                </p>
-
-                <div
-                    id="breathingCircle"
-                    class="breathing-circle">
-
-                    READY
-
+            <div class="webcam-layout">
+                <!-- Video & Overlay Feed -->
+                <div class="video-wrapper">
+                    <video id="webcamVideo" autoplay playsinline muted></video>
+                    <canvas id="webcamOverlay"></canvas>
+                    <div id="cameraStatusBadge" class="camera-badge badge-offline">● Camera Offline</div>
                 </div>
 
-                <h3 id="breathingInstruction">
-                    Press Start
-                </h3>
+                <!-- Live Visual Telemetry Grid -->
+                <div class="telemetry-panel">
+                    <h3>🔍 Live Predictive Biometrics</h3>
+                    <p class="telemetry-disclaimer">
+                        Visual features are extracted live inside your browser as predictive signals and do not represent a clinical diagnosis.
+                    </p>
 
-                <button
-                    class="btn primary-btn"
-                    onclick="startBreathing()">
+                    <div class="telemetry-grid">
+                        <div class="telemetry-item">
+                            <span class="telemetry-label">Face Detection</span>
+                            <span id="telemetryFace" class="telemetry-val">Waiting...</span>
+                        </div>
+                        <div class="telemetry-item">
+                            <span class="telemetry-label">Blink Rate</span>
+                            <span id="telemetryBlink" class="telemetry-val">-- bpm</span>
+                        </div>
+                        <div class="telemetry-item">
+                            <span class="telemetry-label">Eye / Eyelid Fatigue</span>
+                            <span id="telemetryEyeFatigue" class="telemetry-val">--</span>
+                        </div>
+                        <div class="telemetry-item">
+                            <span class="telemetry-label">Facial Tension</span>
+                            <span id="telemetryFacialTension" class="telemetry-val">--</span>
+                        </div>
+                        <div class="telemetry-item">
+                            <span class="telemetry-label">Head Orientation</span>
+                            <span id="telemetryHead" class="telemetry-val">--</span>
+                        </div>
+                        <div class="telemetry-item">
+                            <span class="telemetry-label">Posture / Slouch</span>
+                            <span id="telemetryPosture" class="telemetry-val">--</span>
+                        </div>
+                        <div class="telemetry-item full-width">
+                            <span class="telemetry-label">Restlessness & Fidgeting</span>
+                            <span id="telemetryRestlessness" class="telemetry-val">--</span>
+                        </div>
+                    </div>
 
-                    Start Exercise
-
-                </button>
-
+                    <!-- Camera Control Buttons -->
+                    <div class="webcam-controls">
+                        <button id="startCamBtn" class="btn primary-btn" onclick="startWebcamMonitoring()">
+                            ▶ Start Monitoring
+                        </button>
+                        <button id="stopCamBtn" class="btn danger-btn hidden" onclick="stopWebcamMonitoring()">
+                            ⏹ Stop Monitoring
+                        </button>
+                        <button id="runAiBtn" class="btn success-btn" onclick="submitAIPrediction()">
+                            ⚡ Run AI Stress Prediction 🤖
+                        </button>
+                    </div>
+                </div>
             </div>
 
+            <div class="privacy-callout">
+                <span>🛡️</span>
+                <p>
+                    <strong>Privacy & Data Protection:</strong> Raw video frames are analyzed in-memory and are never uploaded, recorded, or saved to any disk. Only numerical biometric indices are sent to the AI prediction pipeline.
+                </p>
+            </div>
         </div>
 
-
-        <!-- WEEKLY TREND -->
-
-        <div class="card">
-
-            <div class="section-title">
-
-                <span>📊</span>
-
-                <h2>Weekly Stress Trend</h2>
-
+        <!-- STEP 4: DYNAMIC AI STRESS PREDICTION RESULT -->
+        <div id="predictionCard" class="card hidden">
+            <div class="prediction-header">
+                <h2>AI Stress & Welfare Assessment</h2>
+                <p class="subtitle">Multi-Modal Prediction: Trained Random Forest AI Model + Real-Time Biometric Calibration</p>
             </div>
 
+            <!-- Risk Detection Alert Banner -->
+            <div id="riskAlertBanner" class="alert-banner hidden"></div>
+
+            <div class="results-grid">
+                <!-- Circular Stress Gauge -->
+                <div class="gauge-card">
+                    <div class="gauge-container">
+                        <svg class="stress-gauge" viewBox="0 0 200 120">
+                            <!-- Background Arc -->
+                            <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e2e8f0" stroke-width="18" stroke-linecap="round"/>
+                            <!-- Colored Progress Arc -->
+                            <path id="gaugeProgressArc" class="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#16a34a" stroke-width="18" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+                        </svg>
+                        <div class="gauge-center-text">
+                            <div id="stressScore" class="gauge-score">0%</div>
+                            <div class="gauge-sub">Current Stress</div>
+                        </div>
+                    </div>
+
+                    <div id="stressCategoryBadge" class="stress-category-badge badge-low">
+                        LOW STRESS
+                    </div>
+                    <div id="welfareStatusText" class="welfare-status-text">
+                        Welfare Status: Optimal
+                    </div>
+                </div>
+
+                <!-- Metrics & Historical Comparison -->
+                <div class="metrics-comparison-card">
+                    <h3>📊 Session Telemetry Summary</h3>
+                    <div class="metric-row">
+                        <span>Trained AI Base Prediction:</span>
+                        <strong id="rawModelScoreText">-- / 10</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Visual Biometric Calibration:</span>
+                        <strong id="calibratedVisualText">Active (Multi-modal)</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Previous Stress Measurement:</span>
+                        <strong id="prevScoreText">--</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Stress Trend:</span>
+                        <strong id="trendText">--</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>High-Stress Events in History:</span>
+                        <strong id="highEventsCountText">0</strong>
+                    </div>
+
+                    <!-- Dynamic Progress Bar -->
+                    <div class="stress-progress-container">
+                        <div class="progress-labels">
+                            <span>0% Low</span>
+                            <span>45% Moderate</span>
+                            <span>65% High</span>
+                            <span>80% Critical</span>
+                        </div>
+                        <div class="progress-track">
+                            <div id="stressProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMPREHENSIVE DYNAMIC WELLNESS RECOMMENDATIONS -->
+            <div class="wellness-sections-grid">
+                <!-- Exercises -->
+                <div class="wellness-card">
+                    <div class="wellness-title">
+                        <span>🧘</span>
+                        <h3>Personalized Exercises</h3>
+                    </div>
+                    <ul id="personalizedExercisesList" class="wellness-list">
+                        <li>Maintain current healthy routine and regular movement.</li>
+                    </ul>
+                    <button class="btn secondary-btn full-btn" onclick="scrollToBreathing()">
+                        🌬️ Launch 30s Guided Breathing
+                    </button>
+                </div>
+
+                <!-- Balanced Diet -->
+                <div class="wellness-card">
+                    <div class="wellness-title">
+                        <span>🥗</span>
+                        <h3>Balanced Diet Guidance</h3>
+                    </div>
+                    <ul id="balancedDietList" class="wellness-list">
+                        <li>Adequate hydration: 2.5–3 liters daily.</li>
+                    </ul>
+                    <p class="diet-disclaimer">
+                        *Note: General wellness nutritional suggestions, not disease-specific prescriptions.
+                    </p>
+                </div>
+
+                <!-- Preventive Instructions -->
+                <div class="wellness-card">
+                    <div class="wellness-title">
+                        <span>🛡️</span>
+                        <h3>Preventive Instructions</h3>
+                    </div>
+                    <p id="preventiveInstructionText" class="preventive-text">
+                        Your stress indicators are currently low. Continue balanced work intervals and ergonomic posture.
+                    </p>
+                    <div class="preventive-tip">
+                        💡 <strong>Tip:</strong> Re-run a monitoring session after intense shifts to track stress changes.
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons-row">
+                <button class="btn primary-btn" onclick="startNewSession()">
+                    🔄 Start New Daily Monitoring Session
+                </button>
+            </div>
+        </div>
+
+        <!-- GUIDED BREATHING EXERCISE MODULE -->
+        <div id="breathingCard" class="card hidden">
+            <div class="breathing-content">
+                <h2>🌬️ 30-Second Guided Box Breathing Exercise</h2>
+                <p>Follow the visual pacing circle to regulate autonomic nervous balance and lower acute tension.</p>
+
+                <div id="breathingCircle" class="breathing-circle">
+                    READY
+                </div>
+                <h3 id="breathingInstruction">Click Start to Begin</h3>
+
+                <div class="breathing-actions">
+                    <button id="breathingStartBtn" class="btn primary-btn" onclick="startBreathing()">
+                        Start Breathing Pacer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WEEKLY HISTORICAL TREND -->
+        <div class="card">
+            <div class="section-title">
+                <span>📈</span>
+                <h2>Historical Stress Trend & Analytics</h2>
+            </div>
             <p class="section-description">
-                Your stress pattern for the current week.
+                Your monitored stress trajectory over recent sessions. Helps identify trends before stress becomes critical.
             </p>
 
             <div class="chart-wrapper">
-
-                <canvas id="employeeChart"></canvas>
-
+                <canvas id="employeeChart" width="800" height="260"></canvas>
             </div>
 
             <div class="chart-legend">
-
-                <span class="green">
-                    ● Low (0–45%)
-                </span>
-
-                <span class="orange">
-                    ● Medium (45–75%)
-                </span>
-
-                <span class="red">
-                    ● Risky (75–100%)
-                </span>
-
+                <span class="legend-dot green">● Low Stress (0–44%)</span>
+                <span class="legend-dot orange">● Moderate Stress (45–64%)</span>
+                <span class="legend-dot red">● High Stress (65–79%)</span>
+                <span class="legend-dot dark-red">● Critical / High-Risk (80–100%)</span>
             </div>
-
         </div>
 
     </main>
-
 </section>
 
 
-<!-- =========================
-     AUTHORITY REGISTRATION
-========================= -->
-
+<!-- =====================================================
+     HEALTH AUTHORITY REGISTRATION
+===================================================== -->
 <section id="authorityRegisterPage" class="page hidden">
-
     <div class="form-container">
-
         <div class="form-card">
-
-            <div class="logo small-logo">
-                AROGHYA
-            </div>
-
+            <div class="logo small-logo">AROGHYA</div>
             <h2>Health Authority Registration</h2>
-
             <p class="subtitle">
-                Create the authorized health institution account.
+                Authorized institutional access. Strictly only <strong>ONE</strong> authorized Higher Authority account is permitted.
             </p>
 
             <div id="authorityRegisterMessage"></div>
 
             <form id="authorityRegisterForm">
+                <label for="institutionName">Institution / Authority Name</label>
+                <input type="text" id="institutionName" placeholder="e.g. Aroghya Health Authority" required>
 
-                <label>Institution Name</label>
+                <label for="institutionEmail">Institution Official Email</label>
+                <input type="email" id="institutionEmail" placeholder="e.g. aroghya@gmail.com" required>
 
-                <input
-                    type="text"
-                    id="institutionName"
-                    placeholder="Aroghya"
-                    required
-                >
+                <label for="institutionId">Institution ID / Code</label>
+                <input type="text" id="institutionId" placeholder="e.g. Aroghya704" required>
 
-                <label>Institution Mail ID</label>
+                <label for="authorityPassword">Master Password</label>
+                <input type="password" id="authorityPassword" placeholder="Enter secure password" required minlength="6">
 
-                <input
-                    type="email"
-                    id="institutionEmail"
-                    placeholder="aroghya@gmail.com"
-                    required
-                >
+                <label for="authorityConfirmPassword">Confirm Master Password</label>
+                <input type="password" id="authorityConfirmPassword" placeholder="Confirm password" required>
 
-                <label>Institution ID</label>
-
-                <input
-                    type="text"
-                    id="institutionId"
-                    placeholder="Aroghya704"
-                    required
-                >
-
-                <label>Password</label>
-
-                <input
-                    type="password"
-                    id="authorityPassword"
-                    required
-                >
-
-                <label>Confirm Password</label>
-
-                <input
-                    type="password"
-                    id="authorityConfirmPassword"
-                    required
-                >
-
-                <button
-                    class="btn authority-btn full-btn"
-                    type="submit">
-
-                    Create Authority Account
-
+                <button class="btn authority-btn full-btn" type="submit">
+                    Register Authorized Authority
                 </button>
-
             </form>
 
-            <button
-                class="back-btn"
-                onclick="showPage('authorityLoginPage')">
-
-                Already registered? Sign In
-
-            </button>
-
-            <button
-                class="back-btn"
-                onclick="showPage('landingPage')">
-
-                ← Back
-
-            </button>
-
+            <div class="auth-switch-box">
+                <button class="back-btn" onclick="showPage('authorityLoginPage')">
+                    Already Registered? Authority Sign In
+                </button>
+                <button class="back-btn" onclick="showPage('landingPage')">
+                    ← Back to Home
+                </button>
+            </div>
         </div>
-
     </div>
-
 </section>
 
 
-<!-- =========================
-     AUTHORITY LOGIN
-========================= -->
-
+<!-- =====================================================
+     HEALTH AUTHORITY LOGIN
+===================================================== -->
 <section id="authorityLoginPage" class="page hidden">
-
     <div class="form-container">
-
         <div class="form-card">
-
-            <div class="logo small-logo">
-                AROGHYA
-            </div>
-
-            <h2>Health Authority Login</h2>
-
+            <div class="logo small-logo">AROGHYA</div>
+            <h2>Health Authority Sign In</h2>
             <p class="subtitle">
-                Authorized personnel only.
+                Authorized welfare officers and institutional medical supervisors only.
             </p>
 
             <div id="authorityLoginMessage"></div>
 
             <form id="authorityLoginForm">
+                <label for="authorityLoginId">Institution Email or Authority ID</label>
+                <input type="text" id="authorityLoginId" placeholder="e.g. Aroghya704 or aroghya@gmail.com" required>
 
-                <label>Institution Email / ID</label>
+                <label for="authorityLoginPassword">Password</label>
+                <input type="password" id="authorityLoginPassword" placeholder="Enter master password" required>
 
-                <input
-                    type="text"
-                    id="authorityLoginId"
-                    placeholder="Aroghya704"
-                    required
-                >
-
-                <label>Password</label>
-
-                <input
-                    type="password"
-                    id="authorityLoginPassword"
-                    required
-                >
-
-                <button
-                    class="btn authority-btn full-btn"
-                    type="submit">
-
-                    Sign In
-
+                <button class="btn authority-btn full-btn" type="submit">
+                    Sign In to Authority Console
                 </button>
-
             </form>
 
-            <button
-                class="back-btn"
-                onclick="showPage('authorityRegisterPage')">
-
-                New Authority? Register
-
-            </button>
-
-            <button
-                class="back-btn"
-                onclick="showPage('landingPage')">
-
-                ← Back
-
-            </button>
-
+            <div class="auth-switch-box">
+                <button class="back-btn" onclick="showPage('authorityRegisterPage')">
+                    New Authority Registration
+                </button>
+                <button class="back-btn" onclick="showPage('landingPage')">
+                    ← Back to Home
+                </button>
+            </div>
         </div>
-
     </div>
-
 </section>
 
 
-<!-- =========================
-     AUTHORITY DASHBOARD
-========================= -->
-
+<!-- =====================================================
+     HEALTH AUTHORITY DASHBOARD
+===================================================== -->
 <section id="authorityDashboardPage" class="page hidden">
-
-    <nav class="navbar">
-
-        <div class="nav-logo">
-            AROGHYA
-        </div>
-
+    <nav class="navbar authority-nav">
+        <div class="nav-logo">AROGHYA <span>| Health Authority Console 🏥</span></div>
         <div class="nav-right">
-
-            <span>
-                Health Authority
-            </span>
-
-            <button
-                class="logout-btn"
-                onclick="logout()">
-
-                Logout
-
-            </button>
-
+            <span>Official Welfare Supervisor</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
-
     </nav>
-
 
     <main class="dashboard">
 
+        <!-- WELCOME BANNER -->
         <div class="welcome-card authority-welcome">
-
-            <h1>
-                Welcome, Aroghya Health Authority 🏥
-            </h1>
-
-            <p>
-                Monitor personnel wellbeing through early stress-risk awareness.
-            </p>
-
+            <div>
+                <h1>Aroghya Higher Authority Welfare Dashboard 🏥</h1>
+                <p>Real-time workforce mental wellness, stress escalation alerts, and counselling intervention tracking.</p>
+            </div>
+            <button class="btn authority-btn" onclick="loadAuthorityDashboard()">
+                🔄 Refresh Data
+            </button>
         </div>
 
+        <!-- PROMINENT HIGH-RISK ALERT BANNER -->
+        <div id="authorityAlertNotice" class="authority-alert-banner hidden">
+            <div class="alert-icon">🚨</div>
+            <div class="alert-text">
+                <h3 id="authorityAlertCountText">Attention Required: 0 Employees in High-Risk Range</h3>
+                <p>Immediate counselling, workload review, and follow-up support recommended for these personnel.</p>
+            </div>
+        </div>
 
-        <!-- STATISTICS -->
-
-        <div class="stats-grid">
-
+        <!-- 6 OVERALL STATISTICS CARDS -->
+        <div class="stats-grid-6">
             <div class="stat-card">
-
                 <span>👥</span>
-
-                <p>Total Employees</p>
-
-                <h2 id="totalEmployees">
-                    0
-                </h2>
-
+                <p>Total Registered</p>
+                <h2 id="totalEmployees">0</h2>
             </div>
-
-
             <div class="stat-card low-stat">
-
                 <span>🟢</span>
-
-                <p>Low Risk</p>
-
-                <h2 id="lowEmployees">
-                    0
-                </h2>
-
+                <p>Low Stress (Optimal)</p>
+                <h2 id="lowEmployees">0</h2>
             </div>
-
-
             <div class="stat-card medium-stat">
-
                 <span>🟠</span>
-
-                <p>Medium Risk</p>
-
-                <h2 id="mediumEmployees">
-                    0
-                </h2>
-
+                <p>Moderate Stress</p>
+                <h2 id="mediumEmployees">0</h2>
             </div>
-
-
-            <div class="stat-card risky-stat">
-
+            <div class="stat-card high-stat">
                 <span>🔴</span>
-
-                <p>Risky</p>
-
-                <h2 id="riskyEmployees">
-                    0
-                </h2>
-
+                <p>High Stress</p>
+                <h2 id="highEmployees">0</h2>
             </div>
-
+            <div class="stat-card critical-stat">
+                <span>⚠️</span>
+                <p>Critical / High-Risk</p>
+                <h2 id="criticalEmployees">0</h2>
+            </div>
+            <div class="stat-card followup-stat">
+                <span>📋</span>
+                <p>Follow-Up Pending</p>
+                <h2 id="pendingCounsellingCount">0</h2>
+            </div>
         </div>
 
-
-        <!-- EMPLOYEE RECORDS -->
-
+        <!-- EMPLOYEE WELFARE TABLE -->
         <div class="card">
-
-            <div class="section-title">
-
-                <span>👥</span>
-
-                <h2>Employee Records</h2>
-
+            <div class="table-header-row">
+                <div class="section-title">
+                    <span>👥</span>
+                    <h2>Workforce Welfare Records</h2>
+                </div>
+                <div class="table-actions">
+                    <input type="text" id="employeeSearchInput" placeholder="🔍 Search by Name or ID..." onkeyup="filterEmployeeTable()">
+                    <select id="employeeRiskFilter" onchange="filterEmployeeTable()">
+                        <option value="ALL">All Categories</option>
+                        <option value="CRITICAL">Critical Risk</option>
+                        <option value="HIGH">High Stress</option>
+                        <option value="MODERATE">Moderate</option>
+                        <option value="LOW">Low Stress</option>
+                    </select>
+                </div>
             </div>
 
             <div class="table-wrapper">
-
                 <table>
-
                     <thead>
-
                         <tr>
-
                             <th>Employee ID</th>
-
                             <th>Name</th>
-
-                            <th>Email</th>
-
-                            <th>Stress Score</th>
-
-                            <th>Status</th>
-
+                            <th>Current Stress</th>
+                            <th>Category</th>
+                            <th>Trend</th>
+                            <th>Risk Status</th>
+                            <th>Counselling Status</th>
+                            <th>Action</th>
                         </tr>
-
                     </thead>
-
                     <tbody id="employeeTableBody">
-
+                        <tr><td colspan="8" class="text-center">Loading workforce data...</td></tr>
                     </tbody>
-
                 </table>
-
             </div>
-
         </div>
 
-
-        <!-- WORKFORCE CHART -->
-
+        <!-- WORKFORCE TREND CHART -->
         <div class="card">
-
             <div class="section-title">
-
                 <span>📊</span>
-
-                <h2>Workforce Stress Trend</h2>
-
+                <h2>Workforce Stress Trajectory & Distribution</h2>
             </div>
-
-            <p class="section-description">
-                Overall stress-risk trend of the monitored workforce.
-            </p>
+            <p class="section-description">Chronological average workforce stress trends across monitored sessions.</p>
 
             <div class="chart-wrapper">
-
-                <canvas id="authorityChart"></canvas>
-
+                <canvas id="authorityChart" width="800" height="260"></canvas>
             </div>
-
-            <div class="chart-legend">
-
-                <span class="green">
-                    ● Low
-                </span>
-
-                <span class="orange">
-                    ● Medium
-                </span>
-
-                <span class="red">
-                    ● Risky
-                </span>
-
-            </div>
-
         </div>
 
     </main>
-
 </section>
 
 
-<script src="script.js"></script>
+<!-- =====================================================
+     COUNSELLING & WELFARE SUPPORT MODAL
+===================================================== -->
+<div id="counsellingModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div>
+                <h2 id="modalEmployeeName">Employee Welfare Profile</h2>
+                <p id="modalEmployeeSub">ID: -- | Email: --</p>
+            </div>
+            <button class="close-modal-btn" onclick="closeCounsellingModal()">✕</button>
+        </div>
 
+        <div class="modal-body">
+            <!-- Current Status Overview -->
+            <div class="modal-status-summary">
+                <div class="summary-box">
+                    <span>Current Stress:</span>
+                    <strong id="modalStressScore">--%</strong>
+                </div>
+                <div class="summary-box">
+                    <span>Category:</span>
+                    <strong id="modalStressCategory">--</strong>
+                </div>
+                <div class="summary-box">
+                    <span>Trend:</span>
+                    <strong id="modalStressTrend">--</strong>
+                </div>
+                <div class="summary-box">
+                    <span>Risk Status:</span>
+                    <strong id="modalRiskStatus">--</strong>
+                </div>
+            </div>
+
+            <!-- Counselling Action Form -->
+            <div class="counselling-form-container">
+                <h3>📝 Record Counselling & Support Action</h3>
+                <form id="counsellingActionForm">
+                    <input type="hidden" id="counsellingEmployeeId">
+
+                    <div class="form-row-2">
+                        <div class="input-group">
+                            <label for="counsellingStatus">Counselling Workflow Status</label>
+                            <select id="counsellingStatus" required>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Pending">Pending Evaluation</option>
+                                <option value="Completed">Completed / Resolved</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="supportAction">Support / Intervention Action Provided</label>
+                            <select id="supportAction" required>
+                                <option value="1-on-1 Confidential Welfare Session">1-on-1 Confidential Welfare Session</option>
+                                <option value="Workload Reduction & Task Reassignment">Workload Reduction & Task Reassignment</option>
+                                <option value="Mandatory Rest & Recuperation Leave">Mandatory Rest & Recuperation Leave</option>
+                                <option value="Clinical Psychologist / Counselor Referral">Clinical Psychologist / Counselor Referral</option>
+                                <option value="Ergonomic & Shift Pacing Adjustment">Ergonomic & Shift Pacing Adjustment</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="counsellingNotes">Detailed Observation & Action Notes</label>
+                        <textarea id="counsellingNotes" rows="3" placeholder="Enter confidential notes regarding observed stressors, discussion summary, and recommendations provided..." required></textarea>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="input-group">
+                            <label for="followUpDate">Follow-Up Review Date</label>
+                            <input type="date" id="followUpDate" required>
+                        </div>
+                        <div class="input-group btn-align-bottom">
+                            <button class="btn authority-btn full-btn" type="submit">
+                                💾 Save Counselling Record
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Past Counselling History Table -->
+            <div class="past-counselling-container">
+                <h3>📋 Previous Counselling History & Stress Outcomes</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Action Provided</th>
+                                <th>Authority Notes</th>
+                                <th>Follow-Up Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pastCounsellingTableBody">
+                            <tr><td colspan="5" class="text-center">No past counselling records.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>

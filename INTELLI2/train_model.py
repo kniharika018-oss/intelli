@@ -49,7 +49,7 @@ y = df[target]
 # =========================
 
 categorical_columns = X.select_dtypes(
-    include=["object", "str"]
+    include=["object"]
 ).columns.tolist()
 
 numerical_columns = X.select_dtypes(
