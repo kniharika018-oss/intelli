@@ -28,6 +28,25 @@ def add_cors_headers(response):
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "INTELLI2", "stress_model.pkl")
 
+
+def safe_float(val, default=0.0):
+    if val is None or val == "" or str(val).strip().lower() in ("undefined", "null", "none"):
+        return float(default)
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return float(default)
+
+
+def safe_int(val, default=0):
+    if val is None or val == "" or str(val).strip().lower() in ("undefined", "null", "none"):
+        return int(default)
+    try:
+        return int(float(val))
+    except (ValueError, TypeError):
+        return int(default)
+
+
 # Load trained AI Model Pipeline
 print(f"[AI] Loading trained model from {MODEL_PATH}...")
 try:
@@ -64,7 +83,7 @@ def api_register_employee():
     data = request.get_json() or {}
     name = data.get("name", "").strip()
     email = data.get("email", "").strip()
-    employee_id = data.get("employeeId", "").strip()
+    employee_id = (data.get("employeeId") or data.get("employee_id") or "").strip()
     password = data.get("password", "")
 
     if not name or not email or not employee_id or not password:
@@ -72,6 +91,8 @@ def api_register_employee():
 
     result = database.register_employee(name, email, employee_id, password)
     status_code = 200 if result["success"] else 400
+    if result.get("success") and "user" in result:
+        result["user"]["employeeId"] = result["user"].get("employee_id")
     return jsonify(result), status_code
 
 
@@ -80,7 +101,7 @@ def api_register_authority():
     data = request.get_json() or {}
     institution_name = data.get("institutionName", "").strip()
     email = data.get("institutionEmail", "").strip()
-    institution_id = data.get("institutionId", "").strip()
+    institution_id = (data.get("institutionId") or data.get("institution_id") or "").strip()
     password = data.get("password", "")
 
     if not institution_name or not email or not institution_id or not password:
@@ -88,13 +109,15 @@ def api_register_authority():
 
     result = database.register_authority(institution_name, email, institution_id, password)
     status_code = 200 if result["success"] else 400
+    if result.get("success") and "user" in result:
+        result["user"]["employeeId"] = result["user"].get("employee_id")
     return jsonify(result), status_code
 
 
 @app.route("/api/auth/login", methods=["POST"])
 def api_login():
     data = request.get_json() or {}
-    login_id = data.get("loginId", "").strip()
+    login_id = (data.get("loginId") or data.get("login_id") or "").strip()
     password = data.get("password", "")
     role = data.get("role", "employee")
 
@@ -103,6 +126,15 @@ def api_login():
 
     result = database.authenticate_user(login_id, password, expected_role=role)
     status_code = 200 if result["success"] else 401
+    if result.get("success") and "user" in result:
+        u = result["user"]
+        u["employeeId"] = u.get("employee_id")
+        u["employee_id"] = u.get("employee_id")
+        if u.get("role") == "authority":
+            u["institutionId"] = u.get("employee_id")
+            u["institution_id"] = u.get("employee_id")
+            u["institutionName"] = u.get("name")
+            u["institution_name"] = u.get("name")
     return jsonify(result), status_code
 
 
@@ -110,7 +142,7 @@ def api_login():
 # AI PREDICTION & FEATURE-INTEGRATION PIPELINE
 # =====================================================
 
-def prepare_model_features(questionnaire, smartwatch, profile):
+def prepare_model_features(questionnaire, profile):
     """
     Constructs a DataFrame with the EXACT 24 features and order
     expected by the trained Random Forest Pipeline.
@@ -122,48 +154,42 @@ def prepare_model_features(questionnaire, smartwatch, profile):
                   'social_support_score', 'has_therapy', 'anxiety_score',
                   'depression_score', 'burnout_score', 'seeks_professional_help']
     """
-    # 1. Questionnaire inputs
-    sleep_quality = float(questionnaire.get("sleepQuality", 3))   # 1 to 4
-    duty_hours = float(questionnaire.get("dutyHours", 8.0))       # 0 to 24
-    mood = float(questionnaire.get("mood", 3))                     # 1 to 5
-    energy = float(questionnaire.get("energy", 50))                # 0 to 100
-    workload = float(questionnaire.get("workload", 2))             # 1 to 4
-    self_stress = float(questionnaire.get("selfStress", 30))       # 0 to 100
+    if not questionnaire or not isinstance(questionnaire, dict):
+        questionnaire = {}
+    if not profile or not isinstance(profile, dict):
+        profile = {}
 
-    # 2. Smartwatch inputs if present
-    if smartwatch:
-        sleep_hours = float(smartwatch.get("sleepHours", 7.0))
-        steps = float(smartwatch.get("steps", 6000))
-        # Map steps to physical activity days (0 to 7)
-        physical_activity_days = min(7, int(steps / 2500))
-        heart_rate = float(smartwatch.get("heartRate", 75))
-    else:
-        # Infer sleep hours from sleep quality: 1->4.5h, 2->6.0h, 3->7.5h, 4->8.5h
-        sleep_hours_map = {1: 4.5, 2: 6.0, 3: 7.5, 4: 8.5}
-        sleep_hours = sleep_hours_map.get(int(sleep_quality), 7.0)
-        physical_activity_days = 3
-        heart_rate = 72.0
+    # 1. Questionnaire inputs with safe type conversion (self-perceived stress removed)
+    sleep_quality = safe_float(questionnaire.get("sleepQuality"), 3.0)   # 1 to 4
+    duty_hours = safe_float(questionnaire.get("dutyHours"), 8.0)         # 0 to 24
+    mood = safe_float(questionnaire.get("mood"), 3.0)                   # 1 to 5
+    energy = safe_float(questionnaire.get("energy"), 50.0)              # 0 to 100
+    workload = safe_float(questionnaire.get("workload"), 2.0)           # 1 to 4
+
+    # 2. Objective sleep & physical activity parameters
+    sleep_hours_map = {1: 4.5, 2: 6.0, 3: 7.5, 4: 8.5}
+    sleep_hours = sleep_hours_map.get(int(sleep_quality), 7.0)
+    physical_activity_days = 3
 
     # 3. Workload & schedule conversions
     work_hours_per_week = float(duty_hours * 5.0)
     overtime_hours = float(max(0.0, (duty_hours - 8.0) * 5.0))
     meetings_per_day = float(min(8.0, max(1.0, workload * 1.5)))
-    deadlines_missed = int(max(0, int((workload - 2) * 1.2)))
+    deadlines_missed = int(max(0, int((workload - 2.0) * 1.2)))
 
-    # 4. Psychological & welfare proxy scores (1.0 to 10.0 scale)
+    # 4. Psychological & welfare proxy scores (1.0 to 10.0 scale) derived objectively
     job_satisfaction = float(round((mood / 5.0) * 10.0, 1))
     manager_support = 6.0
-    # Work life balance: high hours and poor sleep reduce balance
     work_life_balance = float(round(max(1.0, 10.0 - (duty_hours - 6.0) - (4.0 - sleep_quality) * 1.5), 1))
     screen_time_hours = float(round(duty_hours * 0.9, 1))
     caffeine_intake = 2
     social_support_score = float(round(mood * 1.6, 1))
     has_therapy = 0
 
-    # Anxiety and depression derived from self-stress and energy
-    anxiety_score = float(round(min(10.0, max(1.0, (self_stress / 10.0))), 1))
+    # Anxiety, depression, and burnout objectively synthesized without self-perceived stress
+    anxiety_score = float(round(min(10.0, max(1.0, (5.0 - mood) * 1.5 + workload * 1.25)), 1))
     depression_score = float(round(min(10.0, max(1.0, ((100.0 - energy) / 10.0))), 1))
-    burnout_score = float(round(min(10.0, max(1.0, (self_stress * 0.05 + workload * 1.25))), 1))
+    burnout_score = float(round(min(10.0, max(1.0, (workload * 1.8 + (duty_hours - 6.0) * 0.4 + (4.0 - sleep_quality) * 0.75))), 1))
 
     if burnout_score < 4.0:
         burnout_level = "Low"
@@ -172,17 +198,15 @@ def prepare_model_features(questionnaire, smartwatch, profile):
     else:
         burnout_level = "High"
 
-    seeks_professional_help = 1 if (self_stress >= 75.0 or anxiety_score >= 8.0) else 0
+    seeks_professional_help = 1 if (anxiety_score >= 7.5 or burnout_score >= 7.5) else 0
 
-    # Demographic defaults
     age = 30
-    gender = "Female" if "pranavi" in profile.get("name", "").lower() else "Male"
+    gender = "Female" if "pranavi" in str(profile.get("name", "")).lower() else "Male"
     job_role = "Backend Developer"
     experience_years = 4.5
     company_size = "Mid-size"
     work_mode = "Hybrid"
 
-    # Assemble dictionary with exact feature names
     features = {
         "age": [age],
         "gender": [gender],
@@ -220,23 +244,21 @@ def calculate_feature_integration(raw_model_score, webcam_signals):
     with real-time webcam biometrics (blink rate, eye fatigue, facial tension,
     posture slouch, restlessness) into a calibrated dynamic 0-100% stress score.
     """
-    # Base model score mapped from 1.0-10.0 to 10%-100%
+    raw_model_score = safe_float(raw_model_score, 5.5)
     base_model_pct = (raw_model_score / 10.0) * 100.0
 
-    if webcam_signals:
-        blink_rate = float(webcam_signals.get("blinkRate", 16))
-        eye_fatigue = float(webcam_signals.get("eyeFatigueScore", 30))
-        facial_tension = float(webcam_signals.get("facialTensionScore", 35))
-        posture_slouch = float(webcam_signals.get("postureSlouchScore", 30))
-        restlessness = float(webcam_signals.get("restlessnessScore", 25))
+    if webcam_signals and isinstance(webcam_signals, dict):
+        blink_rate = safe_float(webcam_signals.get("blinkRate") or webcam_signals.get("blink_rate"), 16.0)
+        eye_fatigue = safe_float(webcam_signals.get("eyeFatigueScore") or webcam_signals.get("eye_fatigue_score"), 30.0)
+        facial_tension = safe_float(webcam_signals.get("facialTensionScore") or webcam_signals.get("facial_tension_score"), 35.0)
+        posture_slouch = safe_float(webcam_signals.get("postureSlouchScore") or webcam_signals.get("posture_slouch_score"), 30.0)
+        restlessness = safe_float(webcam_signals.get("restlessnessScore") or webcam_signals.get("restlessness_score"), 25.0)
 
-        # Blink stress calculation: normal is 12-22 bpm; elevated (>28) or strained (<8) indicates stress
         if blink_rate < 8 or blink_rate > 28:
             blink_stress = min(100.0, abs(blink_rate - 18) * 4.5)
         else:
             blink_stress = 20.0
 
-        # Weighted visual stress biometric index
         visual_biometric_score = (
             0.25 * facial_tension +
             0.25 * eye_fatigue +
@@ -245,16 +267,12 @@ def calculate_feature_integration(raw_model_score, webcam_signals):
             0.15 * blink_stress
         )
 
-        # Multi-modal fusion: 70% Trained AI Model + 30% Real-time Visual Signals
         calibrated_score = round(0.70 * base_model_pct + 0.30 * visual_biometric_score)
     else:
-        # Fallback if webcam was not engaged
         calibrated_score = round(base_model_pct)
 
-    # Secure clamp between 0 and 100
     calibrated_score = int(max(0, min(100, calibrated_score)))
 
-    # Determine Stress Category
     if calibrated_score < 45:
         category = "LOW STRESS"
         welfare_status = "Optimal"
@@ -272,7 +290,6 @@ def calculate_feature_integration(raw_model_score, webcam_signals):
         welfare_status = "High-Risk Alert"
         risk_status = "HIGH-RISK WELFARE ALERT"
 
-    # Generate Dynamic Recommendations
     recommendations = generate_recommendations(category)
 
     return calibrated_score, category, welfare_status, risk_status, recommendations
@@ -280,6 +297,57 @@ def calculate_feature_integration(raw_model_score, webcam_signals):
 
 def generate_recommendations(category):
     """Generates personalized exercises, balanced diet, and preventive instructions."""
+    common_warmups = [
+        {
+            "name": "Neck & Cervical Release",
+            "icon": "🙆‍♂️",
+            "duration": "45s",
+            "reps": "5 Reps/Side",
+            "instruction": "Slowly tilt ear toward shoulder, hold 5s, gently roll chin across chest to opposite shoulder.",
+            "target": "Cervical spine, trapezius, and stiff neck muscles"
+        },
+        {
+            "name": "Shoulder Shrugs & Scapular Squeeze",
+            "icon": "🤸",
+            "duration": "40s",
+            "reps": "10 Smooth Rolls",
+            "instruction": "Inhale deeply lifting shoulders toward ears, roll backwards and down, squeezing shoulder blades.",
+            "target": "Reverses monitor hunching and upper back tightness"
+        },
+        {
+            "name": "Seated Torso Spine Twist",
+            "icon": "🧘",
+            "duration": "60s",
+            "reps": "3 Breaths/Side",
+            "instruction": "Sit tall with feet flat. Place right hand on left knee, left hand behind chair, inhale and exhale gentle twist.",
+            "target": "Thoracic spine mobility and lumbar decompression"
+        },
+        {
+            "name": "20-20-20 Eye Strain Reset",
+            "icon": "👁️",
+            "duration": "30s",
+            "reps": "Optical Relief",
+            "instruction": "Look at an object 20 feet away for 20s, blink 10 times, rub palms until warm and softly cup over closed eyes.",
+            "target": "Ciliary eye muscles and digital screen fatigue"
+        },
+        {
+            "name": "Wrist & Forearm Flexor Extensor",
+            "icon": "🤲",
+            "duration": "30s",
+            "reps": "2 Reps Each",
+            "instruction": "Extend arm forward with palm facing out, gently pull fingers backward with other hand for 15s. Reverse palm down.",
+            "target": "Carpal tunnel prevention and mouse wrist strain"
+        },
+        {
+            "name": "4-7-8 Relaxation Breathing Pacer",
+            "icon": "🫁",
+            "duration": "60s",
+            "reps": "4 Cycles",
+            "instruction": "Inhale quietly through nose for 4s, hold breath for 7s, exhale slowly through mouth for 8s making a whoosh sound.",
+            "target": "Vagus nerve activation and rapid autonomic nervous reset"
+        }
+    ]
+
     if category == "LOW STRESS":
         return {
             "exercises": [
@@ -297,7 +365,8 @@ def generate_recommendations(category):
                 "Incorporate healthy fats such as walnuts, seeds, or avocado for sustained cognitive clarity.",
                 "Note: These are general wellness suggestions, not clinical dietary prescriptions."
             ],
-            "preventive": "Your stress level is currently low. Continue your healthy routine, ergonomic posture, and regular physical activity."
+            "preventive": "Your stress level is currently low. Continue your healthy routine, ergonomic posture, and regular physical activity.",
+            "warmup_exercises": common_warmups
         }
     elif category == "NORMAL / MODERATE STRESS":
         return {
@@ -317,7 +386,8 @@ def generate_recommendations(category):
                 "Limit excessive caffeine (keep below 2 cups daily) and avoid energy drinks.",
                 "Note: These are general wellness suggestions, not clinical dietary prescriptions."
             ],
-            "preventive": "Your stress level is within a manageable range. Continue regular breaks, sleep, exercise, and healthy eating."
+            "preventive": "Your stress level is within a manageable range. Continue regular breaks, sleep, exercise, and healthy eating.",
+            "warmup_exercises": common_warmups
         }
     elif category == "HIGH STRESS":
         return {
@@ -337,7 +407,8 @@ def generate_recommendations(category):
                 "Avoid skipping meals and minimize high-sugar snacks that cause glycemic crashes and anxiety.",
                 "Note: These are general wellness suggestions, not clinical dietary prescriptions."
             ],
-            "preventive": "Your stress level is elevated. Consider relaxation activities, adequate rest, exercise, and speaking with a trusted support person."
+            "preventive": "Your stress level is elevated. Consider relaxation activities, adequate rest, exercise, and speaking with a trusted support person.",
+            "warmup_exercises": common_warmups
         }
     else:  # CRITICAL / HIGH-RISK STRESS
         return {
@@ -357,24 +428,24 @@ def generate_recommendations(category):
                 "Strictly avoid caffeine, nicotine, and high-sugar processed foods during acute stress periods.",
                 "Note: These are general wellness suggestions, not clinical dietary prescriptions."
             ],
-            "preventive": "Your stress indicators are persistently elevated. Please prioritize support and counselling and consider professional assistance immediately."
+            "preventive": "Your stress indicators are persistently elevated. Please prioritize support and counselling and consider professional assistance immediately.",
+            "warmup_exercises": common_warmups
         }
 
 
 @app.route("/api/predict", methods=["POST"])
 def api_predict():
     data = request.get_json() or {}
-    employee_id = data.get("employeeId", "").strip()
-    profile = data.get("profile", {})
-    questionnaire = data.get("questionnaire", {})
-    smartwatch = data.get("smartwatch")
-    webcam_signals = data.get("webcamSignals")
+    employee_id = (data.get("employeeId") or data.get("employee_id") or "").strip()
+    profile = data.get("profile") or {}
+    questionnaire = data.get("questionnaire") or {}
+    webcam_signals = data.get("webcamSignals") or data.get("webcam_signals") or {}
 
-    if not employee_id:
-        return jsonify({"success": False, "message": "Employee ID is required."}), 400
+    if not employee_id or employee_id.lower() in ("undefined", "null", ""):
+        return jsonify({"success": False, "message": "Valid Employee ID is required."}), 400
 
     # 1. Prepare exact features expected by existing trained AI model
-    df_features = prepare_model_features(questionnaire, smartwatch, profile)
+    df_features = prepare_model_features(questionnaire, profile)
 
     # 2. Run existing trained AI Model
     if AI_MODEL is not None:
@@ -409,10 +480,17 @@ def api_predict():
         "success": True,
         "sessionId": session_id,
         "calibratedScore": calibrated_score,
+        "calibrated_stress_score": calibrated_score,
+        "stressScore": calibrated_score,
         "category": category,
+        "stress_category": category,
+        "stressCategory": category,
         "welfareStatus": welfare_status,
+        "welfare_status": welfare_status,
         "riskStatus": risk_status,
+        "risk_status": risk_status,
         "rawModelScore": round(raw_model_score, 2),
+        "raw_model_score": round(raw_model_score, 2),
         "recommendations": recommendations,
         "isHighRisk": calibrated_score >= 65
     })
@@ -464,14 +542,14 @@ def api_authority_employee_detail(employee_id):
 @app.route("/api/authority/counselling", methods=["POST"])
 def api_save_counselling():
     data = request.get_json() or {}
-    employee_id = data.get("employeeId", "").strip()
-    authority_id = data.get("authorityId", "Aroghya704").strip()
+    employee_id = (data.get("employeeId") or data.get("employee_id") or "").strip()
+    authority_id = (data.get("authorityId") or data.get("authority_id") or "Aroghya704").strip()
     notes = data.get("notes", "").strip()
-    support_action = data.get("supportAction", "").strip()
-    follow_up_date = data.get("followUpDate", "")
+    support_action = (data.get("supportAction") or data.get("support_action") or "").strip()
+    follow_up_date = (data.get("followUpDate") or data.get("follow_up_date") or "").strip()
     status = data.get("status", "In Progress")
 
-    if not employee_id or not notes or not support_action:
+    if not employee_id or employee_id.lower() in ("undefined", "null", "") or not notes or not support_action:
         return jsonify({"success": False, "message": "Employee ID, Notes, and Support Action are required."}), 400
 
     rec_id = database.add_counselling_record(

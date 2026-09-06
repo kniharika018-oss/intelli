@@ -13,6 +13,24 @@ from werkzeug.security import generate_password_hash, check_password_hash
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aroghya.db")
 
 
+def safe_float(val, default=0.0):
+    if val is None or val == "" or str(val).strip().lower() in ("undefined", "null", "none"):
+        return float(default)
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return float(default)
+
+
+def safe_int(val, default=0):
+    if val is None or val == "" or str(val).strip().lower() in ("undefined", "null", "none"):
+        return int(default)
+    try:
+        return int(float(val))
+    except (ValueError, TypeError):
+        return int(default)
+
+
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -86,8 +104,85 @@ def init_db():
     conn.commit()
     conn.close()
 
+    # Always strictly guarantee exactly ONE Higher Authority account exists and is valid
+    ensure_authority_account()
+
     # Seed demo data if fresh
     seed_demo_data()
+
+
+def ensure_authority_account():
+    """
+    Strictly guarantees that exactly ONE Higher Authority account exists in the database.
+    Credentials enforced:
+      Institution ID: Aroghya704 (also accepts Arogya704)
+      Email: arogya@gmail.com (also accepts aroghya@gmail.com)
+      Password: 123456 (also accepts Aroghya@2026)
+    Self-heals or initializes without touching employee accounts, monitoring history, or counselling records.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Find existing authority record by employee_id, email, or role
+    cursor.execute("""
+        SELECT id, name, email, employee_id, password_hash, role
+        FROM users
+        WHERE employee_id IN ('Aroghya704', 'Arogya704') 
+           OR LOWER(email) IN ('arogya@gmail.com', 'aroghya@gmail.com') 
+           OR role = 'authority'
+        ORDER BY id ASC
+    """)
+    auth_rows = cursor.fetchall()
+    auth_pass = generate_password_hash("123456")
+
+    if not auth_rows:
+        # Create single authority account
+        cursor.execute(
+            "INSERT INTO users (name, email, employee_id, password_hash, role) VALUES (?, ?, ?, ?, 'authority')",
+            ("Aroghya Health Authority", "arogya@gmail.com", "Aroghya704", auth_pass)
+        )
+        auth_user_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT OR REPLACE INTO authority_config (id, user_id, institution_name, institution_id) VALUES (1, ?, ?, ?)",
+            (auth_user_id, "Aroghya Health Authority", "Aroghya704")
+        )
+    else:
+        # Primary authority record
+        primary = dict(auth_rows[0])
+        auth_user_id = primary["id"]
+
+        # If duplicate authority rows exist, remove extra authority accounts (never delete employees!)
+        if len(auth_rows) > 1:
+            for extra in auth_rows[1:]:
+                cursor.execute("DELETE FROM users WHERE id = ? AND role = 'authority'", (extra["id"],))
+
+        # Check if password or fields need repair
+        needs_update = (
+            primary.get("employee_id") not in ("Aroghya704", "Arogya704") or
+            primary.get("email") not in ("arogya@gmail.com", "aroghya@gmail.com") or
+            primary.get("role") != "authority" or
+            not check_password_hash(primary.get("password_hash", ""), "123456")
+        )
+
+        if needs_update:
+            cursor.execute("""
+                UPDATE users
+                SET name = 'Aroghya Health Authority',
+                    email = 'arogya@gmail.com',
+                    employee_id = 'Aroghya704',
+                    password_hash = ?,
+                    role = 'authority'
+                WHERE id = ?
+            """, (auth_pass, auth_user_id))
+
+        # Ensure authority_config (id=1) links to this user_id
+        cursor.execute(
+            "INSERT OR REPLACE INTO authority_config (id, user_id, institution_name, institution_id) VALUES (1, ?, ?, ?)",
+            (auth_user_id, "Aroghya Health Authority", "Aroghya704")
+        )
+
+    conn.commit()
+    conn.close()
 
 
 def register_employee(name, email, employee_id, password):
@@ -163,12 +258,54 @@ def authenticate_user(login_id, password, expected_role=None):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    clean_id = login_id.strip()
+    clean_id_lower = clean_id.lower()
+
+    # Authority aliases: both arogya and aroghya, both 704 IDs
+    authority_aliases = {"arogya@gmail.com", "aroghya@gmail.com", "aroghya704", "arogya704"}
+
+    if (expected_role == "authority") or (clean_id_lower in authority_aliases):
+        cursor.execute("SELECT id, name, email, employee_id, password_hash, role FROM users WHERE role = 'authority' LIMIT 1")
+        row = cursor.fetchone()
+        if not row:
+            query = """
+                SELECT id, name, email, employee_id, password_hash, role
+                FROM users
+                WHERE LOWER(email) = LOWER(?) OR LOWER(employee_id) = LOWER(?)
+            """
+            cursor.execute(query, (clean_id, clean_id))
+            row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return {"success": False, "message": "Account not found. Please check your credentials or register."}
+
+        user = dict(row)
+        # Check password against stored hash, or dual-support 123456 and Aroghya@2026
+        valid_password = (
+            check_password_hash(user["password_hash"], password) or 
+            password in ("123456", "Aroghya@2026")
+        )
+        if not valid_password:
+            return {"success": False, "message": "Incorrect password. Please try again."}
+
+        if expected_role and user["role"] != expected_role:
+            return {
+                "success": False,
+                "message": f"Access denied. Please log in through the {user['role'].capitalize()} portal."
+            }
+
+        user.pop("password_hash")
+        user["employeeId"] = user["employee_id"]
+        return {"success": True, "user": user}
+
+    # Standard authentication for employees
     query = """
         SELECT id, name, email, employee_id, password_hash, role
         FROM users
         WHERE LOWER(email) = LOWER(?) OR LOWER(employee_id) = LOWER(?)
     """
-    cursor.execute(query, (login_id.strip(), login_id.strip()))
+    cursor.execute(query, (clean_id, clean_id))
     row = cursor.fetchone()
     conn.close()
 
@@ -185,25 +322,63 @@ def authenticate_user(login_id, password, expected_role=None):
             "message": f"Access denied. Please log in through the {user['role'].capitalize()} portal."
         }
 
-    # Clean password hash before returning
     user.pop("password_hash")
+    user["employeeId"] = user["employee_id"]
     return {"success": True, "user": user}
 
 
 def save_monitoring_session(employee_id, raw_model_score, calibrated_stress_score,
                            stress_category, welfare_status, risk_status,
                            webcam_features, questionnaire_data, recommendations):
+    if not employee_id or str(employee_id).strip().lower() in ("undefined", "null", ""):
+        raise ValueError("Invalid employee_id: cannot save session for undefined or empty employee_id")
+
+    calibrated_stress_score = safe_int(calibrated_stress_score, 50)
+    raw_model_score = safe_float(raw_model_score, 5.5)
+
+    if not stress_category or str(stress_category).strip().lower() in ("undefined", "null", ""):
+        if calibrated_stress_score < 45:
+            stress_category = "LOW STRESS"
+        elif calibrated_stress_score < 65:
+            stress_category = "NORMAL / MODERATE STRESS"
+        elif calibrated_stress_score < 80:
+            stress_category = "HIGH STRESS"
+        else:
+            stress_category = "CRITICAL / HIGH-RISK STRESS"
+
+    if not welfare_status or str(welfare_status).strip().lower() in ("undefined", "null", ""):
+        if calibrated_stress_score < 45:
+            welfare_status = "Optimal"
+        elif calibrated_stress_score < 65:
+            welfare_status = "Stable"
+        elif calibrated_stress_score < 80:
+            welfare_status = "Attention Required"
+        else:
+            welfare_status = "High-Risk Alert"
+
+    if not risk_status or str(risk_status).strip().lower() in ("undefined", "null", ""):
+        if calibrated_stress_score < 45:
+            risk_status = "LOW RISK"
+        elif calibrated_stress_score < 65:
+            risk_status = "MODERATE RISK"
+        elif calibrated_stress_score < 80:
+            risk_status = "HIGH STRESS – ATTENTION REQUIRED"
+        else:
+            risk_status = "HIGH-RISK WELFARE ALERT"
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
         INSERT INTO monitoring_sessions (
             employee_id, raw_model_score, calibrated_stress_score,
             stress_category, welfare_status, risk_status,
-            webcam_features_json, questionnaire_data_json, recommendations_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            webcam_features_json, questionnaire_data_json, recommendations_json,
+            created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        employee_id,
+        str(employee_id).strip(),
         raw_model_score,
         calibrated_stress_score,
         stress_category,
@@ -211,7 +386,8 @@ def save_monitoring_session(employee_id, raw_model_score, calibrated_stress_scor
         risk_status,
         json.dumps(webcam_features) if webcam_features else None,
         json.dumps(questionnaire_data) if questionnaire_data else None,
-        json.dumps(recommendations) if recommendations else None
+        json.dumps(recommendations) if recommendations else None,
+        now_ts
     ))
 
     session_id = cursor.lastrowid
@@ -221,6 +397,9 @@ def save_monitoring_session(employee_id, raw_model_score, calibrated_stress_scor
 
 
 def get_employee_sessions(employee_id, limit=20):
+    if not employee_id or str(employee_id).strip().lower() in ("undefined", "null", ""):
+        return []
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -231,9 +410,9 @@ def get_employee_sessions(employee_id, limit=20):
                created_at
         FROM monitoring_sessions
         WHERE employee_id = ?
-        ORDER BY created_at DESC
+        ORDER BY id DESC
         LIMIT ?
-    """, (employee_id, limit))
+    """, (str(employee_id).strip(), limit))
 
     rows = cursor.fetchall()
     conn.close()
@@ -244,18 +423,61 @@ def get_employee_sessions(employee_id, limit=20):
         d["webcam_features"] = json.loads(d["webcam_features_json"]) if d["webcam_features_json"] else {}
         d["questionnaire_data"] = json.loads(d["questionnaire_data_json"]) if d["questionnaire_data_json"] else {}
         d["recommendations"] = json.loads(d["recommendations_json"]) if d["recommendations_json"] else {}
+
+        # Provide dual snake_case and camelCase aliases to avoid undefined errors
+        d["calibratedScore"] = d["calibrated_stress_score"]
+        d["stressScore"] = d["calibrated_stress_score"]
+        d["category"] = d["stress_category"]
+        d["stressCategory"] = d["stress_category"]
+        d["welfareStatus"] = d["welfare_status"]
+        d["riskStatus"] = d["risk_status"]
+        d["rawModelScore"] = d["raw_model_score"]
+        d["createdAt"] = d["created_at"]
+        d["employeeId"] = d["employee_id"]
         sessions.append(d)
     return sessions
 
 
 def get_employee_dashboard_data(employee_id):
-    sessions = get_employee_sessions(employee_id, limit=14)
+    if not employee_id or str(employee_id).strip().lower() in ("undefined", "null", ""):
+        return {
+            "latest": None,
+            "previous_score": None,
+            "previousScore": None,
+            "trend": "STABLE",
+            "high_stress_events": 0,
+            "highStressEvents": 0,
+            "total_sessions": 0,
+            "totalSessions": 0,
+            "weekly_labels": [],
+            "weeklyLabels": [],
+            "weekly_scores": [],
+            "weeklyScores": [],
+            "all_sessions": [],
+            "allSessions": [],
+            "user": None
+        }
+
+    clean_emp_id = str(employee_id).strip()
+
+    # Query employee profile
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, email, employee_id, role, created_at FROM users WHERE employee_id = ?", (clean_emp_id,))
+    u_row = cursor.fetchone()
+    conn.close()
+
+    user_info = dict(u_row) if u_row else None
+    if user_info:
+        user_info["employeeId"] = user_info["employee_id"]
+
+    sessions = get_employee_sessions(clean_emp_id, limit=14)
     latest = sessions[0] if sessions else None
 
     # Trend calculation
     trend = "STABLE"
     prev_score = None
-    if len(sessions) > 1:
+    if len(sessions) > 1 and latest:
         prev_score = sessions[1]["calibrated_stress_score"]
         diff = latest["calibrated_stress_score"] - prev_score
         if diff >= 5:
@@ -272,18 +494,38 @@ def get_employee_dashboard_data(employee_id):
 
     # Weekly history array (last 7 data points)
     recent_chronological = list(reversed(sessions[:7]))
-    weekly_labels = [datetime.fromisoformat(s["created_at"]).strftime("%a %d %b") for s in recent_chronological]
-    weekly_scores = [s["calibrated_stress_score"] for s in recent_chronological]
+    weekly_labels = []
+    weekly_scores = []
+    for s in recent_chronological:
+        created_str = str(s.get("created_at") or "")
+        try:
+            dt = datetime.strptime(created_str, "%Y-%m-%d %H:%M:%S")
+            lbl = dt.strftime("%b %d, %H:%M")
+        except Exception:
+            try:
+                dt = datetime.fromisoformat(created_str)
+                lbl = dt.strftime("%b %d, %H:%M")
+            except Exception:
+                lbl = created_str.split(" ")[0] if " " in created_str else created_str
+        weekly_labels.append(lbl)
+        weekly_scores.append(s["calibrated_stress_score"])
 
     return {
         "latest": latest,
         "previous_score": prev_score,
+        "previousScore": prev_score,
         "trend": trend,
         "high_stress_events": high_stress_events,
+        "highStressEvents": high_stress_events,
         "total_sessions": len(sessions),
+        "totalSessions": len(sessions),
         "weekly_labels": weekly_labels,
+        "weeklyLabels": weekly_labels,
         "weekly_scores": weekly_scores,
-        "all_sessions": sessions
+        "weeklyScores": weekly_scores,
+        "all_sessions": sessions,
+        "allSessions": sessions,
+        "user": user_info
     }
 
 
@@ -395,6 +637,11 @@ def get_authority_employee_table():
 
     # Fetch counselling status for each
     for emp in employees:
+        emp["employeeId"] = emp["employee_id"]
+        emp["calibratedScore"] = emp["calibrated_stress_score"]
+        emp["stressCategory"] = emp["stress_category"]
+        emp["riskStatus"] = emp["risk_status"]
+
         cursor.execute("""
             SELECT status, follow_up_date, notes, support_action
             FROM counselling_records
@@ -403,7 +650,13 @@ def get_authority_employee_table():
             LIMIT 1
         """, (emp["employee_id"],))
         c_row = cursor.fetchone()
-        emp["counselling"] = dict(c_row) if c_row else None
+        if c_row:
+            c_dict = dict(c_row)
+            c_dict["followUpDate"] = c_dict["follow_up_date"]
+            c_dict["supportAction"] = c_dict["support_action"]
+            emp["counselling"] = c_dict
+        else:
+            emp["counselling"] = None
 
         # Calculate trend
         cursor.execute("""
@@ -434,6 +687,9 @@ def get_authority_employee_table():
 
 
 def add_counselling_record(employee_id, authority_id, notes, support_action, follow_up_date, status="In Progress"):
+    if not employee_id or str(employee_id).strip().lower() in ("undefined", "null", ""):
+        raise ValueError("Invalid employee_id: cannot save counselling record for undefined or empty employee_id")
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -441,7 +697,7 @@ def add_counselling_record(employee_id, authority_id, notes, support_action, fol
         INSERT INTO counselling_records (
             employee_id, authority_id, status, notes, support_action, follow_up_date
         ) VALUES (?, ?, ?, ?, ?, ?)
-    """, (employee_id, authority_id, status, notes.strip(), support_action.strip(), follow_up_date))
+    """, (str(employee_id).strip(), str(authority_id).strip(), status, notes.strip(), support_action.strip(), follow_up_date))
 
     rec_id = cursor.lastrowid
     conn.commit()
@@ -450,6 +706,9 @@ def add_counselling_record(employee_id, authority_id, notes, support_action, fol
 
 
 def get_counselling_history(employee_id):
+    if not employee_id or str(employee_id).strip().lower() in ("undefined", "null", ""):
+        return []
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -459,36 +718,35 @@ def get_counselling_history(employee_id):
         FROM counselling_records
         WHERE employee_id = ?
         ORDER BY created_at DESC
-    """, (employee_id,))
+    """, (str(employee_id).strip(),))
 
-    records = [dict(r) for r in cursor.fetchall()]
+    records = []
+    for r in cursor.fetchall():
+        d = dict(r)
+        d["employeeId"] = d["employee_id"]
+        d["authorityId"] = d["authority_id"]
+        d["supportAction"] = d["support_action"]
+        d["followUpDate"] = d["follow_up_date"]
+        d["createdAt"] = d["created_at"]
+        records.append(d)
+
     conn.close()
     return records
 
 
 def seed_demo_data():
     """Seeds default authority and sample employees if database is brand new."""
+    ensure_authority_account()
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT COUNT(*) as count FROM users")
+    cursor.execute("SELECT COUNT(*) as count FROM users WHERE role = 'employee'")
     if cursor.fetchone()["count"] > 0:
         conn.close()
         return
 
-    print("[DB] Seeding default authority and demo employees...")
-
-    # Default Higher Authority
-    auth_pass = generate_password_hash("Aroghya@2026")
-    cursor.execute(
-        "INSERT INTO users (name, email, employee_id, password_hash, role) VALUES (?, ?, ?, ?, 'authority')",
-        ("Aroghya Health Authority", "aroghya@gmail.com", "Aroghya704", auth_pass)
-    )
-    auth_user_id = cursor.lastrowid
-    cursor.execute(
-        "INSERT INTO authority_config (id, user_id, institution_name, institution_id) VALUES (1, ?, ?, ?)",
-        (auth_user_id, "Aroghya Health Authority", "Aroghya704")
-    )
+    print("[DB] Seeding demo employees and baseline monitoring...")
 
     # Demo Employees with realistic stress profiles
     demo_employees = [
@@ -546,7 +804,7 @@ def seed_demo_data():
             status,
             risk,
             json.dumps({"blink_rate": 18, "eye_fatigue_score": 45, "facial_tension_score": score, "posture_slouch_score": 35, "restlessness_score": 40}),
-            json.dumps({"dutyHours": 8.5, "sleepQuality": 2, "mood": 3, "energy": 55, "workload": 3, "selfStress": score}),
+            json.dumps({"dutyHours": 8.5, "sleepQuality": 2, "mood": 3, "energy": 55, "workload": 3}),
             json.dumps({"exercises": ["Guided deep breathing", "2-minute shoulder roll", "Hydration break"], "diet": "Drink 2.5L water, avoid excess caffeine, eat fruits", "preventive": "Take a 5-minute break every hour."}),
             ts
         ))

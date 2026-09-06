@@ -1363,3 +1363,430 @@ tr:hover {
     display: flex;
     align-items: flex-end;
 }
+
+/* =====================================================
+   AROGHYA BRAND LOGO & DYNAMIC WELLNESS QUOTE
+===================================================== */
+
+.aroghya-logo-icon {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wellness-quote-card {
+    background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+    border: 1.5px solid #bbf7d0;
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wellness-quote-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.12);
+}
+
+.quote-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.quote-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.quote-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #047857;
+    background: #d1fae5;
+    padding: 3px 10px;
+    border-radius: 9999px;
+}
+
+.quote-refresh-btn {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quote-refresh-btn:hover {
+    background: #ffffff;
+    border-color: #34d399;
+    color: #047857;
+}
+
+.quote-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #1e293b;
+    line-height: 1.5;
+    font-style: italic;
+    margin: 0;
+}
+
+/* =====================================================
+   STRESS ANALYSIS & DYNAMIC CHARTS
+===================================================== */
+
+.analysis-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.analysis-metric {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.analysis-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.analysis-val {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--primary-dark);
+}
+
+.chart-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-sm);
+    min-height: 220px;
+}
+
+.empty-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+.chart-empty-state h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+
+.chart-empty-state p {
+    font-size: 13px;
+    color: #64748b;
+    max-width: 360px;
+    margin: 0;
+}
+
+.form-row-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+/* =====================================================
+   EMOJI SLIDER SCALE (STEP 1)
+===================================================== */
+.slider-emoji-scale {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+.emoji-scale-min, .emoji-scale-max {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* =====================================================
+   BIOMETRIC & STRESS FACTORS BREAKDOWN GRAPH (STEP 4)
+===================================================== */
+.factors-chart-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin: 24px 0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+}
+
+.factors-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid #f1f5f9;
+}
+
+.factors-title-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.factors-icon {
+    font-size: 28px;
+}
+
+.factors-header h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.factors-subtitle {
+    font-size: 13px;
+    color: #64748b;
+    margin: 2px 0 0 0;
+}
+
+.factors-overall-pill {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.factors-bars-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.factor-row {
+    display: grid;
+    grid-template-columns: 240px 1fr 65px 110px;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease;
+}
+
+.factor-row:hover {
+    background: #f1f5f9;
+}
+
+.factor-label-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.factor-emoji {
+    font-size: 18px;
+}
+
+.factor-track {
+    background: #e2e8f0;
+    border-radius: 999px;
+    height: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.factor-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.factor-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    text-align: right;
+}
+
+.factor-status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* =====================================================
+   DESK WARM-UP EXERCISES (FINAL OUTPUT)
+===================================================== */
+.warmup-section-card {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 50%, #eff6ff 100%);
+    border: 1.5px solid #bbf7d0;
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin: 24px 0;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.07);
+}
+
+.warmup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid rgba(16, 185, 129, 0.2);
+}
+
+.warmup-title-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.warmup-icon {
+    font-size: 30px;
+}
+
+.warmup-header h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #064e3b;
+    margin: 0;
+}
+
+.warmup-subtitle {
+    font-size: 13px;
+    color: #047857;
+    margin: 2px 0 0 0;
+}
+
+.warmup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.warmup-item-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.warmup-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    border-color: #10b981;
+}
+
+.warmup-card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.warmup-emoji {
+    font-size: 26px;
+    background: #f0fdf4;
+    border-radius: 8px;
+    padding: 6px;
+}
+
+.warmup-titles h4 {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 4px 0;
+}
+
+.warmup-tag {
+    font-size: 11px;
+    font-weight: 700;
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.warmup-instruction {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.45;
+    margin: 0;
+    flex: 1;
+}
+
+.warmup-target-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #059669;
+    background: #ecfdf5;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+@media (max-width: 768px) {
+    .factor-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .factor-val {
+        text-align: left;
+    }
+}

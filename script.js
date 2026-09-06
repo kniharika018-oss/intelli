@@ -7,7 +7,27 @@
 let currentEmployee = null;
 let currentAuthority = null;
 let basicData = {};
-let smartwatchData = null;
+
+// Dynamic Mindful Wellness Quotes
+const wellnessQuotes = [
+    { emoji: "🌿", text: "Take a deep breath. In the midst of work, your peace and well-being come first." },
+    { emoji: "🧘", text: "Pause for sixty seconds. Relax your shoulders, unclamp your jaw, and let tension fade." },
+    { emoji: "💙", text: "Productivity thrives on balance, not exhaustion. Honor your pace and take mindful breaks." },
+    { emoji: "🌱", text: "Small micro-breaks throughout your day cultivate long-term resilience and sustained focus." },
+    { emoji: "✨", text: "You don't have to carry every deadline at once. Focus on the present step with clarity." },
+    { emoji: "🍵", text: "Hydrate, step back from the screen for a moment, and give your mind space to recharge." },
+    { emoji: "🌸", text: "Self-care is a prerequisite for excellence, not a reward. Treat yourself with patience today." }
+];
+
+function displayRandomWellnessQuote() {
+    const textEl = document.getElementById("wellnessQuoteText");
+    const emojiEl = document.getElementById("quoteEmoji");
+    if (!textEl) return;
+    const randomIndex = Math.floor(Math.random() * wellnessQuotes.length);
+    const item = wellnessQuotes[randomIndex];
+    textEl.innerText = `"${item.text}"`;
+    if (emojiEl) emojiEl.innerText = item.emoji;
+}
 
 // Webcam & Real-Time Computer Vision State
 let webcamStream = null;
@@ -109,6 +129,11 @@ document.getElementById("employeeLoginForm").addEventListener("submit", async fu
 
         if (data.success) {
             currentEmployee = data.user;
+            if (currentEmployee) {
+                currentEmployee.employeeId = currentEmployee.employeeId || currentEmployee.employee_id;
+                currentEmployee.employee_id = currentEmployee.employeeId;
+                sessionStorage.setItem("aroghya_current_employee", JSON.stringify(currentEmployee));
+            }
             msgEl.innerHTML = "";
             loadEmployeeDashboard();
         } else {
@@ -155,7 +180,7 @@ document.getElementById("authorityRegisterForm").addEventListener("submit", asyn
                 showPage("authorityLoginPage");
             }, 1200);
         } else {
-            msgEl.innerHTML = `<div class="error-message">${data.message}</div>`;
+            msgEl.innerHTML = `<div class="error-message">${data.message}<br><button type="button" class="btn authority-btn" style="margin-top:10px; padding:6px 14px; font-size:13px;" onclick="showPage('authorityLoginPage')">👉 Go to Authority Sign In</button></div>`;
         }
     } catch (err) {
         msgEl.innerHTML = `<div class="error-message">Connection error. Ensure backend server is running.</div>`;
@@ -180,6 +205,11 @@ document.getElementById("authorityLoginForm").addEventListener("submit", async f
 
         if (data.success) {
             currentAuthority = data.user;
+            if (currentAuthority) {
+                currentAuthority.employeeId = currentAuthority.employeeId || currentAuthority.employee_id;
+                currentAuthority.employee_id = currentAuthority.employeeId;
+                sessionStorage.setItem("aroghya_current_authority", JSON.stringify(currentAuthority));
+            }
             msgEl.innerHTML = "";
             loadAuthorityDashboard();
         } else {
@@ -192,9 +222,11 @@ document.getElementById("authorityLoginForm").addEventListener("submit", async f
 
 
 function logout() {
-    stopWebcamMonitoring();
+    stopWebcamMonitoring(false);
     currentEmployee = null;
     currentAuthority = null;
+    sessionStorage.removeItem("aroghya_current_employee");
+    sessionStorage.removeItem("aroghya_current_authority");
     showPage("landingPage");
 }
 
@@ -206,115 +238,109 @@ function logout() {
 async function loadEmployeeDashboard() {
     showPage("employeeDashboardPage");
 
-    document.getElementById("navEmployeeName").innerText = currentEmployee.name;
-    document.getElementById("welcomeName").innerText = currentEmployee.name;
-    document.getElementById("profileName").innerText = currentEmployee.name;
-    document.getElementById("profileEmail").innerText = currentEmployee.email;
-    document.getElementById("profileEmployeeId").innerText = currentEmployee.employeeId;
+    if (!currentEmployee) return;
+
+    // Safety fallback for currentEmployee keys
+    currentEmployee.employeeId = currentEmployee.employeeId || currentEmployee.employee_id;
+    currentEmployee.employee_id = currentEmployee.employeeId;
+
+    const empName = currentEmployee.name || "Employee";
+    const empEmail = currentEmployee.email || "";
+    const empId = currentEmployee.employeeId || "";
+
+    const navNameEl = document.getElementById("navEmployeeName");
+    if (navNameEl) navNameEl.innerText = empName;
+    const welcomeEl = document.getElementById("welcomeName");
+    if (welcomeEl) welcomeEl.innerText = empName;
+    const profileNameEl = document.getElementById("profileName");
+    if (profileNameEl) profileNameEl.innerText = empName;
+    const profileEmailEl = document.getElementById("profileEmail");
+    if (profileEmailEl) profileEmailEl.innerText = empEmail;
+    const profileIdEl = document.getElementById("profileEmployeeId");
+    if (profileIdEl) profileIdEl.innerText = empId;
 
     resetEmployeeFlow();
 
     // Fetch historical data from backend
     try {
-        const res = await fetch(`/api/employee/dashboard/${encodeURIComponent(currentEmployee.employeeId)}`);
+        const res = await fetch(`/api/employee/dashboard/${encodeURIComponent(empId)}`);
         const result = await res.json();
         if (result.success && result.data) {
+            if (result.data.user) {
+                if (!currentEmployee.name && result.data.user.name) {
+                    currentEmployee.name = result.data.user.name;
+                    if (navNameEl) navNameEl.innerText = currentEmployee.name;
+                    if (welcomeEl) welcomeEl.innerText = currentEmployee.name;
+                    if (profileNameEl) profileNameEl.innerText = currentEmployee.name;
+                }
+                if (!currentEmployee.email && result.data.user.email) {
+                    currentEmployee.email = result.data.user.email;
+                    if (profileEmailEl) profileEmailEl.innerText = currentEmployee.email;
+                }
+            }
             updateDashboardHistoryUI(result.data);
+            if (result.data.latest) {
+                displayPredictionResults(result.data.latest, false);
+            }
         }
     } catch (err) {
         console.warn("Could not fetch employee dashboard history:", err);
     }
+    displayRandomWellnessQuote();
 }
 
 
 function resetEmployeeFlow() {
-    document.getElementById("todayStatusCard").classList.remove("hidden");
-    document.getElementById("smartwatchCard").classList.add("hidden");
-    document.getElementById("permissionCard").classList.add("hidden");
-    document.getElementById("watchDataCard").classList.add("hidden");
-    document.getElementById("webcamCard").classList.add("hidden");
-    document.getElementById("predictionCard").classList.add("hidden");
-    document.getElementById("breathingCard").classList.add("hidden");
-    document.getElementById("employeeRiskBanner").classList.add("hidden");
+    const todayCard = document.getElementById("todayStatusCard");
+    if (todayCard) todayCard.classList.remove("hidden");
+    const webcamCard = document.getElementById("webcamCard");
+    if (webcamCard) webcamCard.classList.add("hidden");
 
     basicData = {};
-    smartwatchData = null;
-    stopWebcamMonitoring();
+    stopWebcamMonitoring(false);
 }
 
 function startNewSession() {
     resetEmployeeFlow();
-    document.getElementById("todayStatusCard").scrollIntoView({ behavior: "smooth" });
+    const todayCard = document.getElementById("todayStatusCard");
+    if (todayCard) todayCard.scrollIntoView({ behavior: "smooth" });
 }
-
 
 // Range Slider Listeners
-document.getElementById("energy").addEventListener("input", function() {
-    document.getElementById("energyValue").innerText = this.value + "%";
-});
-
-document.getElementById("selfStress").addEventListener("input", function() {
-    document.getElementById("stressValue").innerText = this.value + "%";
-});
-
+const energySlider = document.getElementById("energy");
+if (energySlider) {
+    energySlider.addEventListener("input", function() {
+        const valEl = document.getElementById("energyValue");
+        if (valEl) valEl.innerText = this.value + "%";
+    });
+}
 
 // Step 1: Submit Questionnaire
-document.getElementById("basicStatusForm").addEventListener("submit", function(event) {
-    event.preventDefault();
+const basicStatusForm = document.getElementById("basicStatusForm");
+if (basicStatusForm) {
+    basicStatusForm.addEventListener("submit", function(event) {
+        event.preventDefault();
 
-    basicData = {
-        sleepQuality: Number(document.getElementById("sleepQuality").value),
-        dutyHours: Number(document.getElementById("dutyHours").value),
-        mood: Number(document.getElementById("mood").value),
-        workload: Number(document.getElementById("workload").value),
-        energy: Number(document.getElementById("energy").value),
-        selfStress: Number(document.getElementById("selfStress").value)
-    };
+        basicData = {
+            sleepQuality: Number(document.getElementById("sleepQuality").value),
+            dutyHours: Number(document.getElementById("dutyHours").value),
+            mood: Number(document.getElementById("mood").value),
+            workload: Number(document.getElementById("workload").value),
+            energy: Number(document.getElementById("energy").value)
+        };
 
-    document.getElementById("todayStatusCard").classList.add("hidden");
-    document.getElementById("smartwatchCard").classList.remove("hidden");
-    document.getElementById("smartwatchCard").scrollIntoView({ behavior: "smooth" });
-});
-
-
-// Step 2: Smartwatch Option Handlers
-function showPermission() {
-    document.getElementById("smartwatchCard").classList.add("hidden");
-    document.getElementById("permissionCard").classList.remove("hidden");
+        const todayCard = document.getElementById("todayStatusCard");
+        if (todayCard) todayCard.classList.add("hidden");
+        openWebcamMonitoring();
+    });
 }
-
-function continueWatch() {
-    document.getElementById("permissionCard").classList.add("hidden");
-    document.getElementById("watchDataCard").classList.remove("hidden");
-}
-
-function skipWatch() {
-    smartwatchData = null;
-    document.getElementById("smartwatchCard").classList.add("hidden");
-    document.getElementById("permissionCard").classList.add("hidden");
-    document.getElementById("watchDataCard").classList.add("hidden");
-
-    // Proceed to Step 3: Webcam Monitoring
-    openWebcamMonitoring();
-}
-
-document.getElementById("watchDataForm").addEventListener("submit", function(event) {
-    event.preventDefault();
-
-    smartwatchData = {
-        heartRate: Number(document.getElementById("heartRate").value),
-        steps: Number(document.getElementById("steps").value),
-        sleepHours: Number(document.getElementById("sleepHours").value),
-        wearableStress: Number(document.getElementById("wearableStress").value)
-    };
-
-    document.getElementById("watchDataCard").classList.add("hidden");
-    openWebcamMonitoring();
-});
 
 function openWebcamMonitoring() {
-    document.getElementById("webcamCard").classList.remove("hidden");
-    document.getElementById("webcamCard").scrollIntoView({ behavior: "smooth" });
+    const camCard = document.getElementById("webcamCard");
+    if (camCard) {
+        camCard.classList.remove("hidden");
+        camCard.scrollIntoView({ behavior: "smooth" });
+    }
 }
 
 
@@ -369,7 +395,9 @@ async function startWebcamMonitoring() {
     }
 }
 
-function stopWebcamMonitoring() {
+async function stopWebcamMonitoring(triggerSave = true) {
+    const wasActive = webcamActive;
+
     if (webcamStream) {
         webcamStream.getTracks().forEach(track => track.stop());
         webcamStream = null;
@@ -401,13 +429,14 @@ function stopWebcamMonitoring() {
     }
 
     // Reset telemetry displays
-    document.getElementById("telemetryFace").innerText = "Offline";
-    document.getElementById("telemetryBlink").innerText = "-- bpm";
-    document.getElementById("telemetryEyeFatigue").innerText = "--";
-    document.getElementById("telemetryFacialTension").innerText = "--";
-    document.getElementById("telemetryHead").innerText = "--";
-    document.getElementById("telemetryPosture").innerText = "--";
-    document.getElementById("telemetryRestlessness").innerText = "--";
+    const faceEl = document.getElementById("telemetryFace");
+    if (faceEl) faceEl.innerText = "Offline";
+
+    // If monitoring was actively recording, auto-save the session to database
+    if (triggerSave && wasActive && currentEmployee) {
+        console.log("[Aroghya] Monitoring stopped: saving session to database...");
+        await submitAIPrediction();
+    }
 }
 
 
@@ -478,8 +507,17 @@ function runRealTimeCVLoop() {
     const rightEyeX = faceX + faceW * 0.72;
 
     const now = Date.now();
-    // Simulate natural blink trigger every 2.5 - 5 seconds, adjusted by workload and self-stress
-    const stressMod = (basicData.selfStress || 30) / 100;
+    // Derive objective stress indicator from workload, duty hours, mood, and sleep (no self-perceived stress)
+    const workloadLvl = basicData.workload || 2;
+    const dutyHrs = basicData.dutyHours || 8;
+    const moodLvl = basicData.mood || 3;
+    const sleepQ = basicData.sleepQuality || 3;
+    const stressMod = Math.max(0.1, Math.min(0.9, (
+        (workloadLvl / 4) * 0.35 +
+        (Math.min(14, dutyHrs) / 14) * 0.25 +
+        ((6 - moodLvl) / 5) * 0.25 +
+        ((5 - sleepQ) / 4) * 0.15
+    )));
     const blinkIntervalExpected = Math.max(1800, 4200 - (stressMod * 1600));
 
     if (now - lastBlinkTime > blinkIntervalExpected) {
@@ -576,9 +614,106 @@ function runRealTimeCVLoop() {
 
         const restlessLabel = restlessnessScore < 40 ? "Stable & Calm" : "Fidgeting / High Restlessness";
         document.getElementById("telemetryRestlessness").innerText = restlessLabel;
+
+        // Live stress estimation (70% questionnaire baseline + 30% visual biometrics)
+        const liveBlinkStress = (latestWebcamSignals.blinkRate < 8 || latestWebcamSignals.blinkRate > 28) ? Math.min(100, Math.abs(latestWebcamSignals.blinkRate - 18) * 4.5) : 20.0;
+        const liveVisual = Math.round(
+            0.25 * latestWebcamSignals.facialTensionScore +
+            0.25 * latestWebcamSignals.eyeFatigueScore +
+            0.20 * latestWebcamSignals.postureSlouchScore +
+            0.15 * latestWebcamSignals.restlessnessScore +
+            0.15 * liveBlinkStress
+        );
+        const baselineStress = Math.round(stressMod * 70);
+        const liveStressEst = Math.max(0, Math.min(100, Math.round(0.70 * baselineStress + 0.30 * liveVisual)));
+        const liveStressEl = document.getElementById("telemetryLiveStress");
+        if (liveStressEl) {
+            let liveColor = "#16a34a";
+            if (liveStressEst >= 80) liveColor = "#991b1b";
+            else if (liveStressEst >= 65) liveColor = "#dc2626";
+            else if (liveStressEst >= 45) liveColor = "#d97706";
+            liveStressEl.innerHTML = `<strong style="color: ${liveColor}">${liveStressEst}%</strong> (${liveVisual}% visual)`;
+        }
     }
 
     cvAnimFrameId = requestAnimationFrame(runRealTimeCVLoop);
+}
+
+
+function getFallbackRecommendations(category) {
+    if (category === "LOW STRESS") {
+        return {
+            exercises: [
+                "Maintain current active and healthy routine.",
+                "Engage in 20-30 minutes of light aerobic exercise (walking, cycling, or jogging).",
+                "Take periodic 2-minute visual and physical stretch breaks during duty."
+            ],
+            relaxation: [
+                "Enjoy recreational hobbies or spend quality time with family/friends.",
+                "Practice mindful evening relaxation to sustain restorative sleep."
+            ],
+            diet: [
+                "Maintain optimal hydration: 2.5–3 liters of clean water daily.",
+                "Eat balanced meals rich in whole grains, colorful vegetables, and lean proteins.",
+                "Incorporate healthy fats such as walnuts, seeds, or avocado for sustained cognitive clarity."
+            ],
+            preventive: "Your stress level is currently low. Continue your healthy routine, ergonomic posture, and regular physical activity."
+        };
+    } else if (category === "NORMAL / MODERATE STRESS") {
+        return {
+            exercises: [
+                "Follow the 30-Second Guided Box Breathing Exercise (Inhale 4s, Hold 4s, Exhale 4s, Hold 4s).",
+                "Perform gentle cervical spine and shoulder rolls to release upper-back tension.",
+                "Take a 10-15 minute brisk outdoor walk during your mid-day break."
+            ],
+            relaxation: [
+                "Practice progressive muscle relaxation (tensing and releasing muscle groups).",
+                "Brief 5-minute digital detox away from screens after intense tasks."
+            ],
+            diet: [
+                "Drink warm herbal infusions (chamomile, green tea, or peppermint).",
+                "Consume magnesium-rich snacks (almonds, pumpkin seeds, dark chocolate >70%).",
+                "Limit caffeine and energy drinks to avoid elevated resting heart rate."
+            ],
+            preventive: "Mild stress indicators detected. Schedule regular micro-breaks and maintain ergonomic posture to avoid cumulative fatigue."
+        };
+    } else if (category === "HIGH STRESS") {
+        return {
+            exercises: [
+                "Perform seated diaphragmatic breathing (slow 4-7-8 breathing sequence).",
+                "Do gentle standing hamstring and upper pectoral stretches.",
+                "Discontinue strenuous physical exertion until resting pulse stabilizes."
+            ],
+            relaxation: [
+                "Take an immediate mandatory 15-minute restorative detachment break.",
+                "Step away from high-stimulus screens into natural light or quiet space."
+            ],
+            diet: [
+                "Stay hydrated with room-temperature water or electrolyte coconut water.",
+                "Opt for easily digestible balanced foods (oatmeal, bananas, berries).",
+                "Avoid stimulants, excessive sugar, and heavy meals that disrupt autonomic regulation."
+            ],
+            preventive: "Stress indicators are elevated. Scheduled pacing, ergonomic adjustments, and restorative relaxation are recommended."
+        };
+    } else {
+        return {
+            exercises: [
+                "Discontinue high-intensity work immediately; initiate slow calming breath cycles.",
+                "Immediate ergonomic rest in a quiet, low-stimulation environment.",
+                "Important: Physical exercise is supportive and must NOT be treated as a substitute for professional care."
+            ],
+            relaxation: [
+                "Urgent rest break authorized by institution guidelines.",
+                "Connect with designated Aroghya Health Authority counsellor or clinical psychologist."
+            ],
+            diet: [
+                "Ensure steady, gentle hydration with water and electrolyte-balanced soups.",
+                "Easily digestible, nutrient-dense foods (warm broths, fruits, steamed vegetables).",
+                "Strictly avoid caffeine, nicotine, and high-sugar processed foods during acute stress periods."
+            ],
+            preventive: "Your stress indicators are persistently elevated. Please prioritize support and counselling and consider professional assistance immediately."
+        };
+    }
 }
 
 
@@ -587,16 +722,29 @@ function runRealTimeCVLoop() {
 ===================================================== */
 
 async function submitAIPrediction() {
+    if (!currentEmployee) {
+        console.warn("[Aroghya] Prediction requested but no employee logged in.");
+        return;
+    }
+
+    const empId = currentEmployee.employeeId || currentEmployee.employee_id;
+    if (!empId) {
+        console.warn("[Aroghya] Missing employee ID for prediction.");
+        return;
+    }
+
     const runBtn = document.getElementById("runAiBtn");
-    runBtn.innerText = "⏳ Processing AI Model Inference...";
-    runBtn.disabled = true;
+    if (runBtn) {
+        runBtn.innerText = "⏳ Processing AI Model Inference...";
+        runBtn.disabled = true;
+    }
 
     try {
         const payload = {
-            employeeId: currentEmployee.employeeId,
+            employeeId: empId,
+            employee_id: empId,
             profile: currentEmployee,
-            questionnaire: basicData,
-            smartwatch: smartwatchData,
+            questionnaire: basicData || {},
             webcamSignals: latestWebcamSignals
         };
 
@@ -608,133 +756,189 @@ async function submitAIPrediction() {
         const result = await res.json();
 
         if (result.success) {
-            displayPredictionResults(result);
+            displayPredictionResults(result, true);
             // Refresh weekly historical trend chart
-            const historyRes = await fetch(`/api/employee/dashboard/${encodeURIComponent(currentEmployee.employeeId)}`);
+            const historyRes = await fetch(`/api/employee/dashboard/${encodeURIComponent(empId)}`);
             const historyData = await historyRes.json();
-            if (historyData.success) {
+            if (historyData.success && historyData.data) {
                 updateDashboardHistoryUI(historyData.data);
             }
         } else {
-            alert("Prediction error: " + result.message);
+            console.error("Prediction error:", result.message);
+            alert("Prediction error: " + (result.message || "Unknown error"));
         }
     } catch (err) {
         console.error("AI inference error:", err);
         alert("Failed to reach AI Prediction backend. Ensure server.py is running on port 5000.");
     } finally {
-        runBtn.innerText = "⚡ Run AI Stress Prediction 🤖";
-        runBtn.disabled = false;
+        if (runBtn) {
+            runBtn.innerText = "⚡ Run AI Stress Prediction 🤖";
+            runBtn.disabled = false;
+        }
     }
 }
 
 
-function displayPredictionResults(result) {
-    document.getElementById("predictionCard").classList.remove("hidden");
-    document.getElementById("predictionCard").scrollIntoView({ behavior: "smooth" });
+function displayPredictionResults(result, shouldScroll = true) {
+    if (!result) return;
+    const predCard = document.getElementById("predictionCard");
+    if (predCard) {
+        predCard.classList.remove("hidden");
+        if (shouldScroll) {
+            predCard.scrollIntoView({ behavior: "smooth" });
+        }
+    }
 
-    const score = result.calibratedScore;
-    const category = result.category;
-    const welfareStatus = result.welfareStatus;
-    const recommendations = result.recommendations;
+    const rawScore = result.calibratedScore !== undefined ? result.calibratedScore : (result.calibrated_stress_score !== undefined ? result.calibrated_stress_score : (result.stressScore !== undefined ? result.stressScore : 0));
+    const score = Math.max(0, Math.min(100, Math.round(Number(rawScore) || 0)));
+    const category = result.category || result.stress_category || result.stressCategory || "NORMAL / MODERATE STRESS";
+    const welfareStatus = result.welfareStatus || result.welfare_status || "Stable";
+    const rawModelVal = result.rawModelScore !== undefined ? result.rawModelScore : (result.raw_model_score !== undefined ? result.raw_model_score : (score / 10).toFixed(1));
+
+    let recommendations = result.recommendations;
+    if (!recommendations || (!recommendations.exercises && !recommendations.diet)) {
+        recommendations = getFallbackRecommendations(category);
+    }
 
     // 1. Update Circular Gauge
     const scoreEl = document.getElementById("stressScore");
-    scoreEl.innerText = score + "%";
+    if (scoreEl) scoreEl.innerText = score + "%";
 
     const arc = document.getElementById("gaugeProgressArc");
-    // Arc circumference is 251.2
-    const offset = 251.2 * (1 - (score / 100));
-    arc.style.strokeDashoffset = offset;
+    if (arc) {
+        // Arc circumference is 251.2
+        const offset = 251.2 * (1 - (score / 100));
+        arc.style.strokeDashoffset = offset;
 
-    // Colorize gauge based on stress range
-    let gaugeColor = "#16a34a"; // Green
-    let badgeClass = "badge-low";
-    if (score >= 80) {
-        gaugeColor = "#991b1b"; // Dark Red
-        badgeClass = "badge-critical";
-    } else if (score >= 65) {
-        gaugeColor = "#dc2626"; // Red
-        badgeClass = "badge-high";
-    } else if (score >= 45) {
-        gaugeColor = "#d97706"; // Orange
-        badgeClass = "badge-normal";
+        // Colorize gauge based on stress range
+        let gaugeColor = "#16a34a"; // Green
+        let badgeClass = "badge-low";
+        if (score >= 80) {
+            gaugeColor = "#991b1b"; // Dark Red
+            badgeClass = "badge-critical";
+        } else if (score >= 65) {
+            gaugeColor = "#dc2626"; // Red
+            badgeClass = "badge-high";
+        } else if (score >= 45) {
+            gaugeColor = "#d97706"; // Orange
+            badgeClass = "badge-normal";
+        }
+        arc.style.stroke = gaugeColor;
+
+        // 2. Category & Welfare Status
+        const categoryBadge = document.getElementById("stressCategoryBadge");
+        if (categoryBadge) {
+            categoryBadge.innerText = category;
+            categoryBadge.className = `stress-category-badge ${badgeClass}`;
+        }
     }
-    arc.style.stroke = gaugeColor;
 
-    // 2. Category & Welfare Status
-    const categoryBadge = document.getElementById("stressCategoryBadge");
-    categoryBadge.innerText = category;
-    categoryBadge.className = `stress-category-badge ${badgeClass}`;
-
-    document.getElementById("welfareStatusText").innerText = `Welfare Status: ${welfareStatus}`;
+    const welfareTextEl = document.getElementById("welfareStatusText");
+    if (welfareTextEl) welfareTextEl.innerText = `Welfare Status: ${welfareStatus}`;
 
     // Update profile status pill
     const profilePill = document.getElementById("profileWelfareStatus");
-    profilePill.innerText = welfareStatus;
-    profilePill.className = `status-pill ${score >= 80 ? 'status-risk' : score >= 65 ? 'status-attention' : score >= 45 ? 'status-stable' : 'status-optimal'}`;
+    if (profilePill) {
+        profilePill.innerText = welfareStatus;
+        profilePill.className = `status-pill ${score >= 80 ? 'status-risk' : score >= 65 ? 'status-attention' : score >= 45 ? 'status-stable' : 'status-optimal'}`;
+    }
 
     // 3. Risk Detection Alert Banners
     const riskAlertBanner = document.getElementById("riskAlertBanner");
     const empRiskBanner = document.getElementById("employeeRiskBanner");
 
     if (score >= 80) {
-        riskAlertBanner.className = "alert-banner risk-banner high-risk";
-        riskAlertBanner.innerHTML = `
-            <div class="risk-icon">🚨</div>
-            <div class="risk-details">
-                <h3>HIGH-RISK WELFARE ALERT</h3>
-                <p>Critical cumulative stress markers detected. Confidential counselling support and institutional attention have been notified.</p>
-            </div>
-        `;
-        riskAlertBanner.classList.remove("hidden");
+        if (riskAlertBanner) {
+            riskAlertBanner.className = "alert-banner risk-banner high-risk";
+            riskAlertBanner.innerHTML = `
+                <div class="risk-icon">🚨</div>
+                <div class="risk-details">
+                    <h3>HIGH-RISK WELFARE ALERT</h3>
+                    <p>Critical cumulative stress markers detected. Confidential counselling support and institutional attention have been notified.</p>
+                </div>
+            `;
+            riskAlertBanner.classList.remove("hidden");
+        }
 
-        empRiskBanner.className = "risk-banner high-risk";
-        document.getElementById("riskBannerIcon").innerText = "🚨";
-        document.getElementById("riskBannerTitle").innerText = "HIGH-RISK WELFARE ALERT";
-        document.getElementById("riskBannerDesc").innerText = "Persistent high stress indicators detected. Please prioritize rest and access counselling support.";
-        empRiskBanner.classList.remove("hidden");
-
+        if (empRiskBanner) {
+            empRiskBanner.className = "risk-banner high-risk";
+            const iconEl = document.getElementById("riskBannerIcon");
+            if (iconEl) iconEl.innerText = "🚨";
+            const titleEl = document.getElementById("riskBannerTitle");
+            if (titleEl) titleEl.innerText = "HIGH-RISK WELFARE ALERT";
+            const descEl = document.getElementById("riskBannerDesc");
+            if (descEl) descEl.innerText = "Persistent high stress indicators detected. Please prioritize rest and access counselling support.";
+            empRiskBanner.classList.remove("hidden");
+        }
     } else if (score >= 65) {
-        riskAlertBanner.className = "alert-banner risk-banner high-stress";
-        riskAlertBanner.innerHTML = `
-            <div class="risk-icon">⚠️</div>
-            <div class="risk-details">
-                <h3>HIGH STRESS – ATTENTION REQUIRED</h3>
-                <p>Elevated stress indicators detected across survey and real-time biometrics. Restorative breaks and breathing exercises recommended.</p>
-            </div>
-        `;
-        riskAlertBanner.classList.remove("hidden");
+        if (riskAlertBanner) {
+            riskAlertBanner.className = "alert-banner risk-banner high-stress";
+            riskAlertBanner.innerHTML = `
+                <div class="risk-icon">⚠️</div>
+                <div class="risk-details">
+                    <h3>HIGH STRESS – ATTENTION REQUIRED</h3>
+                    <p>Elevated stress indicators detected across survey and real-time biometrics. Restorative breaks and breathing exercises recommended.</p>
+                </div>
+            `;
+            riskAlertBanner.classList.remove("hidden");
+        }
 
-        empRiskBanner.className = "risk-banner high-stress";
-        document.getElementById("riskBannerIcon").innerText = "⚠️";
-        document.getElementById("riskBannerTitle").innerText = "HIGH STRESS – ATTENTION REQUIRED";
-        document.getElementById("riskBannerDesc").innerText = "Stress indicators are elevated. Scheduled pacing and relaxation recommended.";
-        empRiskBanner.classList.remove("hidden");
+        if (empRiskBanner) {
+            empRiskBanner.className = "risk-banner high-stress";
+            const iconEl = document.getElementById("riskBannerIcon");
+            if (iconEl) iconEl.innerText = "⚠️";
+            const titleEl = document.getElementById("riskBannerTitle");
+            if (titleEl) titleEl.innerText = "HIGH STRESS – ATTENTION REQUIRED";
+            const descEl = document.getElementById("riskBannerDesc");
+            if (descEl) descEl.innerText = "Stress indicators are elevated. Scheduled pacing and relaxation recommended.";
+            empRiskBanner.classList.remove("hidden");
+        }
     } else {
-        riskAlertBanner.classList.add("hidden");
-        empRiskBanner.classList.add("hidden");
+        if (riskAlertBanner) riskAlertBanner.classList.add("hidden");
+        if (empRiskBanner) empRiskBanner.classList.add("hidden");
     }
 
     // 4. Summary Metrics
-    document.getElementById("rawModelScoreText").innerText = `${result.rawModelScore} / 10.0`;
-    document.getElementById("calibratedVisualText").innerText = "Active (Multi-modal 70/30 Fusion)";
+    const rawScoreText = document.getElementById("rawModelScoreText");
+    if (rawScoreText) rawScoreText.innerText = `${rawModelVal} / 10.0`;
+
+    const calVisualText = document.getElementById("calibratedVisualText");
+    if (calVisualText) calVisualText.innerText = "Active (Multi-modal 70/30 Fusion)";
 
     // Progress Bar
     const progressBar = document.getElementById("stressProgressBar");
-    progressBar.style.width = score + "%";
+    if (progressBar) progressBar.style.width = score + "%";
 
     // 5. Populate Dynamic Recommendations
     if (recommendations) {
-        // Exercises
         const exList = document.getElementById("personalizedExercisesList");
-        exList.innerHTML = (recommendations.exercises || []).map(item => `<li>${item}</li>`).join("");
+        if (exList && recommendations.exercises) {
+            exList.innerHTML = (recommendations.exercises || []).map(item => `<li>${item}</li>`).join("");
+        }
 
-        // Balanced Diet
         const dietList = document.getElementById("balancedDietList");
-        dietList.innerHTML = (recommendations.diet || []).map(item => `<li>${item}</li>`).join("");
+        if (dietList && recommendations.diet) {
+            dietList.innerHTML = (recommendations.diet || []).map(item => `<li>${item}</li>`).join("");
+        }
 
-        // Preventive Instructions
-        document.getElementById("preventiveInstructionText").innerText = recommendations.preventive || "";
+        const prevInst = document.getElementById("preventiveInstructionText");
+        if (prevInst) {
+            prevInst.innerText = recommendations.preventive || "";
+        }
+    }
+
+    // 6. Populate Multi-Modal Biometric Factors Breakdown Graph
+    const questionnaireData = result.questionnaire || result.questionnaire_data || basicData || {};
+    const biometricData = result.webcamSignals || result.webcam_signals || result.webcam_features || latestWebcamSignals || {};
+    renderFactorsChart(questionnaireData, biometricData, score);
+
+    // 7. Populate Desk Warm-up & Tension Release Exercises
+    renderWarmupExercises(recommendations);
+
+    // 8. Ensure Stress Analysis & Trajectory card is visible
+    const stressCard = document.getElementById("stressAnalysisCard");
+    if (stressCard) {
+        stressCard.classList.remove("hidden");
     }
 }
 
@@ -743,102 +947,441 @@ function updateDashboardHistoryUI(dashboardData) {
     if (!dashboardData) return;
 
     // Previous Score
-    const prevScore = dashboardData.previous_score;
-    document.getElementById("prevScoreText").innerText = prevScore !== null ? `${prevScore}%` : "Baseline (First Session)";
+    const prevScore = dashboardData.previous_score !== undefined ? dashboardData.previous_score : dashboardData.previousScore;
+    const prevScoreEl = document.getElementById("prevScoreText");
+    if (prevScoreEl) {
+        prevScoreEl.innerText = (prevScore !== null && prevScore !== undefined) ? `${prevScore}%` : "Baseline (First Session)";
+    }
 
     // Trend
-    document.getElementById("trendText").innerText = dashboardData.trend || "Stable";
+    const trendText = dashboardData.trend || "Stable";
+    const trendEl = document.getElementById("trendText");
+    if (trendEl) trendEl.innerText = trendText;
 
     // High stress events count
-    document.getElementById("highEventsCountText").innerText = dashboardData.high_stress_events || 0;
+    const highEvents = dashboardData.high_stress_events !== undefined ? dashboardData.high_stress_events : (dashboardData.highStressEvents || 0);
+    const highEventsEl = document.getElementById("highEventsCountText");
+    if (highEventsEl) highEventsEl.innerText = highEvents;
 
-    // Draw weekly trend chart on canvas
-    drawEmployeeTrendCanvas(dashboardData.weekly_labels || [], dashboardData.weekly_scores || []);
+    // Weekly history arrays
+    let labels = dashboardData.weekly_labels || dashboardData.weeklyLabels || [];
+    let scores = dashboardData.weekly_scores || dashboardData.weeklyScores || [];
+
+    if (scores.length === 0 && dashboardData.latest) {
+        const latestVal = dashboardData.latest.calibratedScore !== undefined ? dashboardData.latest.calibratedScore : (dashboardData.latest.calibrated_stress_score !== undefined ? dashboardData.latest.calibrated_stress_score : dashboardData.latest.stressScore);
+        if (latestVal !== undefined && latestVal !== null) {
+            scores = [Math.max(0, Math.min(100, Math.round(Number(latestVal) || 0)))];
+            labels = ["Today"];
+        }
+    }
+
+    // Stress Analysis Summary Bar Updates
+    const latest = dashboardData.latest;
+    const analysisScoreEl = document.getElementById("analysisCurrentScore");
+    const analysisCategoryEl = document.getElementById("analysisCategoryBadge");
+    const analysisTrendEl = document.getElementById("analysisTrendText");
+    const analysisSessionsEl = document.getElementById("analysisTotalSessions");
+
+    if (latest) {
+        const latestScore = latest.calibratedScore !== undefined ? latest.calibratedScore : (latest.calibrated_stress_score !== undefined ? latest.calibrated_stress_score : latest.stressScore);
+        const scoreNum = Math.max(0, Math.min(100, Math.round(Number(latestScore) || 0)));
+        if (analysisScoreEl) analysisScoreEl.innerText = `${scoreNum}%`;
+
+        const cat = latest.category || latest.stress_category || latest.stressCategory || "OPTIMAL";
+        if (analysisCategoryEl) {
+            analysisCategoryEl.innerText = cat;
+            let pillClass = "status-optimal";
+            if (scoreNum >= 80) pillClass = "status-risk";
+            else if (scoreNum >= 65) pillClass = "status-risk";
+            else if (scoreNum >= 45) pillClass = "status-attention";
+            analysisCategoryEl.className = `status-pill ${pillClass}`;
+        }
+    } else {
+        if (analysisScoreEl) analysisScoreEl.innerText = "--%";
+        if (analysisCategoryEl) {
+            analysisCategoryEl.innerText = "Not Monitored";
+            analysisCategoryEl.className = "status-pill status-optimal";
+        }
+    }
+
+    if (analysisTrendEl) analysisTrendEl.innerText = trendText;
+    const totalSessions = dashboardData.total_sessions !== undefined ? dashboardData.total_sessions : (scores.length || 0);
+    if (analysisSessionsEl) analysisSessionsEl.innerText = totalSessions;
+
+    // Draw authentic trend chart on canvas
+    drawEmployeeTrendCanvas(labels, scores);
 }
 
 
+/* =====================================================
+   MULTI-MODAL BIOMETRIC FACTORS GRAPH REPRESENTATION
+===================================================== */
+
+function renderFactorsChart(questionnaire, webcamSignals, calibratedScore) {
+    const container = document.getElementById("factorsBarsContainer");
+    if (!container) return;
+
+    const q = questionnaire || basicData || {};
+    const w = webcamSignals || latestWebcamSignals || {};
+
+    // 1. Sleep Deficit Index (0-100)
+    let sleepVal = Number(q.sleepQuality);
+    let sleepPct = 30;
+    if (sleepVal === 1) sleepPct = 90;
+    else if (sleepVal === 2) sleepPct = 65;
+    else if (sleepVal === 3) sleepPct = 30;
+    else if (sleepVal === 4) sleepPct = 12;
+
+    // 2. Duty Hours Burden (0-100)
+    let dutyHours = Number(q.dutyHours) || 8;
+    let dutyPct = Math.min(100, Math.max(15, Math.round((dutyHours / 12) * 100)));
+
+    // 3. Workload & Deadline Pressure (0-100)
+    let workloadVal = Number(q.workload);
+    let workloadPct = 45;
+    if (workloadVal === 1) workloadPct = 20;
+    else if (workloadVal === 2) workloadPct = 45;
+    else if (workloadVal === 3) workloadPct = 75;
+    else if (workloadVal === 4) workloadPct = 95;
+
+    // 4. Emotional Strain (0-100)
+    let moodVal = Number(q.mood);
+    let moodPct = 40;
+    if (moodVal === 1) moodPct = 90;
+    else if (moodVal === 2) moodPct = 70;
+    else if (moodVal === 3) moodPct = 40;
+    else if (moodVal === 4) moodPct = 20;
+    else if (moodVal === 5) moodPct = 10;
+
+    // 5. Fatigue / Energy Depletion (0-100)
+    let energyVal = q.energy !== undefined ? Number(q.energy) : 50;
+    let fatiguePct = Math.max(0, Math.min(100, 100 - energyVal));
+
+    // 6. Eye Blink & Digital Strain (0-100)
+    let eyeFatigue = Number(w.eyeFatigueScore) || 28;
+
+    // 7. Facial & Muscular Strain (0-100)
+    let facialTension = Number(w.facialTensionScore) || 32;
+
+    // 8. Postural Slouch Deviation (0-100)
+    let slouchScore = Number(w.postureSlouchScore) || 25;
+
+    // 9. Calibrated Multi-Modal Score
+    let finalScore = Math.max(0, Math.min(100, Math.round(Number(calibratedScore) || 0)));
+
+    const factors = [
+        { emoji: "🌙", name: "Sleep Deficit & Rest Fatigue", pct: sleepPct, detail: sleepPct > 60 ? "Deficit" : "Restorative" },
+        { emoji: "⏱️", name: "Duty Hours & Shift Burden", pct: dutyPct, detail: `${dutyHours} hrs worked` },
+        { emoji: "💼", name: "Workload & Deadline Strain", pct: workloadPct, detail: workloadPct > 60 ? "Intense" : "Manageable" },
+        { emoji: "🎭", name: "Emotional & Mood Strain", pct: moodPct, detail: moodPct > 60 ? "Elevated" : "Balanced" },
+        { emoji: "⚡", name: "Vitality Deficit / Exhaustion", pct: fatiguePct, detail: `${100 - fatiguePct}% energy left` },
+        { emoji: "👁️", name: "Eye Blink & Ocular Strain", pct: eyeFatigue, detail: eyeFatigue > 60 ? "Strained" : "Normal" },
+        { emoji: "😠", name: "Facial & Cranial Muscle Tension", pct: facialTension, detail: facialTension > 60 ? "Tense" : "Relaxed" },
+        { emoji: "🪑", name: "Postural Slouch & Ergonomics", pct: slouchScore, detail: slouchScore > 60 ? "Poor Posture" : "Ergonomic" },
+        { emoji: "🧠", name: "Overall Multi-Modal AI Stress Score", pct: finalScore, detail: finalScore >= 65 ? "High Stress" : finalScore >= 45 ? "Moderate" : "Optimal", highlight: true }
+    ];
+
+    container.innerHTML = factors.map(f => {
+        let barColor = "#16a34a"; // Green
+        let badgeBg = "#dcfce7";
+        let badgeColor = "#166534";
+        if (f.pct >= 80) {
+            barColor = "#991b1b"; // Dark Red
+            badgeBg = "#fee2e2";
+            badgeColor = "#991b1b";
+        } else if (f.pct >= 65) {
+            barColor = "#dc2626"; // Red
+            badgeBg = "#fef2f2";
+            badgeColor = "#dc2626";
+        } else if (f.pct >= 45) {
+            barColor = "#d97706"; // Amber
+            badgeBg = "#fef3c7";
+            badgeColor = "#b45309";
+        }
+
+        const borderStyle = f.highlight ? "border: 1.5px solid #3b82f6; background: #eff6ff;" : "";
+
+        return `
+            <div class="factor-row" style="${borderStyle}">
+                <div class="factor-label-block">
+                    <span class="factor-emoji">${f.emoji}</span>
+                    <span>${f.name}</span>
+                </div>
+                <div class="factor-track">
+                    <div class="factor-fill" style="width: ${f.pct}%; background: ${barColor};"></div>
+                </div>
+                <div class="factor-val" style="color: ${barColor};">${f.pct}%</div>
+                <div>
+                    <span class="factor-status-badge" style="background: ${badgeBg}; color: ${badgeColor};">
+                        ${f.detail}
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+
+/* =====================================================
+   DESK WARM-UP & TENSION RELEASE EXERCISES
+===================================================== */
+
+function renderWarmupExercises(recommendations) {
+    const grid = document.getElementById("warmupGridContainer");
+    if (!grid) return;
+
+    let list = (recommendations && recommendations.warmup_exercises && recommendations.warmup_exercises.length > 0)
+        ? recommendations.warmup_exercises
+        : [
+            {
+                name: "Neck & Cervical Release",
+                icon: "🙆‍♂️",
+                duration: "45s",
+                reps: "5 Reps/Side",
+                instruction: "Slowly tilt right ear toward shoulder, hold for 5s, roll chin down across chest to left shoulder.",
+                target: "Cervical spine, trapezius, stiff neck muscles"
+            },
+            {
+                name: "Shoulder Shrugs & Rolls",
+                icon: "🤸",
+                duration: "40s",
+                reps: "10 Smooth Rolls",
+                instruction: "Inhale deeply lifting shoulders toward ears, roll backwards and down, squeezing scapula together.",
+                target: "Reverses monitor hunch and upper back tightness"
+            },
+            {
+                name: "Seated Torso Spine Twist",
+                icon: "🧘",
+                duration: "60s",
+                reps: "3 Breaths/Side",
+                instruction: "Sit tall with feet flat. Place right hand on left knee, left hand behind chair, inhale and exhale gentle twist.",
+                target: "Lumbar mobility and thoracic spine decompression"
+            },
+            {
+                name: "20-20-20 Eye Strain Reset",
+                icon: "👁️",
+                duration: "30s",
+                reps: "Optical Relief",
+                instruction: "Look at an object 20 feet away for 20s, blink 10 times, rub palms until warm and softly cup over closed eyes.",
+                target: "Ciliary eye muscles and digital screen fatigue"
+            },
+            {
+                name: "Wrist & Forearm Flexor Extensor",
+                icon: "🤲",
+                duration: "30s",
+                reps: "2 Reps Each",
+                instruction: "Extend arm forward with palm out, gently pull fingers backward with other hand for 15s. Reverse palm down.",
+                target: "Carpal tunnel prevention and mouse wrist strain"
+            },
+            {
+                name: "4-7-8 Relaxation Breathing",
+                icon: "🫁",
+                duration: "60s",
+                reps: "4 Cycles",
+                instruction: "Inhale quietly through nose for 4s, hold breath for 7s, exhale completely through mouth for 8s with whoosh sound.",
+                target: "Vagus nerve activation and rapid autonomic nervous reset"
+            }
+        ];
+
+    grid.innerHTML = list.map(item => `
+        <div class="warmup-item-card">
+            <div class="warmup-card-top">
+                <span class="warmup-emoji">${item.icon}</span>
+                <div class="warmup-titles">
+                    <h4>${item.name}</h4>
+                    <span class="warmup-tag">⏱️ ${item.duration} • 🔁 ${item.reps}</span>
+                </div>
+            </div>
+            <p class="warmup-instruction">${item.instruction}</p>
+            <div class="warmup-target-badge">🎯 Target: ${item.target}</div>
+        </div>
+    `).join("");
+}
+
+
+/* =====================================================
+   HISTORICAL CHARTS & DASHBOARD HISTORY
+===================================================== */
+
+let cachedTrendLabels = [];
+let cachedTrendScores = [];
+
 /**
  * High-definition Canvas Line Chart for Employee Stress History
+ * Gracefully handles 0 sessions (empty state), 1 session (center point + baseline),
+ * and multi-session trend lines with rich colored threshold zones.
  */
 function drawEmployeeTrendCanvas(labels, scores) {
     const canvas = document.getElementById("employeeChart");
     if (!canvas) return;
 
+    if (labels && scores) {
+        cachedTrendLabels = labels;
+        cachedTrendScores = scores;
+    } else {
+        labels = cachedTrendLabels;
+        scores = cachedTrendScores;
+    }
+
+    const emptyState = document.getElementById("chartEmptyState");
+    if (!scores || scores.length === 0) {
+        if (emptyState) emptyState.classList.remove("hidden");
+        canvas.style.display = "none";
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add("hidden");
+    canvas.style.display = "block";
+
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
+    const containerW = canvas.parentElement ? canvas.parentElement.clientWidth : 760;
+    const w = Math.max(300, rect.width || containerW || 760);
+    const h = 260;
 
-    canvas.width = rect.width * dpr;
-    canvas.height = 260 * dpr;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
     ctx.scale(dpr, dpr);
 
-    const w = rect.width;
-    const h = 260;
-    const padding = { top: 30, right: 30, bottom: 40, left: 50 };
-
+    const padding = { top: 30, right: 35, bottom: 45, left: 55 };
     ctx.clearRect(0, 0, w, h);
-
-    // Fallback if no scores yet
-    if (!scores || scores.length === 0) {
-        scores = [35, 42, 50, 48, 65, 58, 45];
-        labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Today"];
-    }
 
     const chartW = w - padding.left - padding.right;
     const chartH = h - padding.top - padding.bottom;
 
-    // 1. Draw horizontal grid lines & threshold bands
+    // Draw shaded threshold background bands
+    const y44 = padding.top + chartH * (1 - 0.44);
+    const y65 = padding.top + chartH * (1 - 0.65);
+    const y80 = padding.top + chartH * (1 - 0.80);
+    const y100 = padding.top;
+    const y0 = padding.top + chartH;
+
+    // 0-44% Green zone
+    ctx.fillStyle = "rgba(22, 163, 74, 0.05)";
+    ctx.fillRect(padding.left, y44, chartW, y0 - y44);
+
+    // 45-64% Amber zone
+    ctx.fillStyle = "rgba(217, 119, 6, 0.05)";
+    ctx.fillRect(padding.left, y65, chartW, y44 - y65);
+
+    // 65-79% Red zone
+    ctx.fillStyle = "rgba(220, 38, 38, 0.06)";
+    ctx.fillRect(padding.left, y80, chartW, y65 - y80);
+
+    // 80-100% Dark Crimson zone
+    ctx.fillStyle = "rgba(153, 27, 27, 0.08)";
+    ctx.fillRect(padding.left, y100, chartW, y80 - y100);
+
+    // 1. Draw horizontal grid lines & threshold labels
     const gridSteps = [0, 25, 50, 75, 100];
-    ctx.font = "11px Inter, sans-serif";
+    ctx.font = "11px Inter, system-ui, sans-serif";
     ctx.fillStyle = "#94a3b8";
     ctx.textAlign = "right";
 
     gridSteps.forEach(val => {
         const y = padding.top + chartH * (1 - val / 100);
-        ctx.strokeStyle = "#e2e8f0";
+        ctx.strokeStyle = val === 50 ? "#cbd5e1" : "#f1f5f9";
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(padding.left, y);
         ctx.lineTo(w - padding.right, y);
         ctx.stroke();
 
-        ctx.fillText(val + "%", padding.left - 8, y + 4);
+        ctx.fillText(val + "%", padding.left - 10, y + 4);
     });
 
-    // 2. Plot Points & Spline Line
-    const stepX = chartW / (scores.length - 1 || 1);
+    // 2. Single session baseline visualization
+    if (scores.length === 1) {
+        const score = scores[0];
+        const label = labels[0] || "Today's Assessment";
+        const centerX = padding.left + chartW / 2;
+        const centerY = padding.top + chartH * (1 - score / 100);
+
+        // Dashed reference baseline
+        ctx.strokeStyle = "rgba(37, 99, 235, 0.35)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, centerY);
+        ctx.lineTo(w - padding.right, centerY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Outer glow
+        let nodeColor = "#16a34a";
+        if (score >= 80) nodeColor = "#991b1b";
+        else if (score >= 65) nodeColor = "#dc2626";
+        else if (score >= 45) nodeColor = "#d97706";
+
+        ctx.fillStyle = "rgba(37, 99, 235, 0.15)";
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = nodeColor;
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        // Badge text
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 13px Inter, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`${score}% (Initial Baseline)`, centerX, centerY - 14);
+
+        ctx.fillStyle = "#64748b";
+        ctx.font = "12px Inter, system-ui, sans-serif";
+        ctx.fillText(label, centerX, h - padding.bottom + 22);
+        return;
+    }
+
+    // 3. Multi-Session Trend Line
+    const stepX = chartW / (scores.length - 1);
     const points = scores.map((score, i) => {
         const x = padding.left + i * stepX;
         const y = padding.top + chartH * (1 - score / 100);
-        return { x, y, score, label: labels[i] || "" };
+        return { x, y, score, label: labels[i] || `S${i+1}` };
     });
 
-    // Draw Line
+    // Draw connecting line
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i++) {
         ctx.lineTo(points[i].x, points[i].y);
     }
-    ctx.strokeStyle = "#1769aa";
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 3.5;
     ctx.stroke();
 
-    // Draw Subtle Gradient Area under curve
+    // Gradient fill under line
     const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-    grad.addColorStop(0, "rgba(23, 105, 170, 0.25)");
-    grad.addColorStop(1, "rgba(23, 105, 170, 0.0)");
+    grad.addColorStop(0, "rgba(37, 99, 235, 0.25)");
+    grad.addColorStop(1, "rgba(37, 99, 235, 0.02)");
     ctx.lineTo(points[points.length - 1].x, padding.top + chartH);
     ctx.lineTo(points[0].x, padding.top + chartH);
     ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // 3. Draw Nodes with color-coded risk rings
+    // Draw Nodes
     points.forEach(p => {
         let nodeColor = "#16a34a";
         if (p.score >= 80) nodeColor = "#991b1b";
         else if (p.score >= 65) nodeColor = "#dc2626";
         else if (p.score >= 45) nodeColor = "#d97706";
+
+        // Outer glow
+        ctx.fillStyle = "rgba(37, 99, 235, 0.12)";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+        ctx.fill();
 
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
@@ -849,18 +1392,25 @@ function drawEmployeeTrendCanvas(labels, scores) {
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Value text
-        ctx.fillStyle = "#1e293b";
-        ctx.font = "bold 11px Inter, sans-serif";
+        // Node score text
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 12px Inter, system-ui, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(p.score + "%", p.x, p.y - 10);
+        ctx.fillText(`${p.score}%`, p.x, p.y - 12);
 
-        // X Axis Label
+        // X-axis label
         ctx.fillStyle = "#64748b";
-        ctx.font = "11px Inter, sans-serif";
-        ctx.fillText(p.label, p.x, h - padding.bottom + 20);
+        ctx.font = "11px Inter, system-ui, sans-serif";
+        ctx.fillText(p.label, p.x, h - padding.bottom + 22);
     });
 }
+
+// Global debounced resize listener to keep trend chart perfectly rendered
+window.addEventListener("resize", function() {
+    if (cachedTrendScores && cachedTrendScores.length > 0) {
+        drawEmployeeTrendCanvas(cachedTrendLabels, cachedTrendScores);
+    }
+});
 
 
 /* =====================================================
@@ -963,12 +1513,14 @@ function renderEmployeeTable(employees) {
     }
 
     tbody.innerHTML = employees.map(emp => {
-        const score = emp.calibrated_stress_score;
+        const score = emp.calibratedScore !== undefined ? emp.calibratedScore : emp.calibrated_stress_score;
         let scoreBadge = `<span class="status-pill status-optimal">Not Monitored</span>`;
-        let catText = emp.stress_category || "Unassessed";
-        let riskText = emp.risk_status || "NORMAL";
+        let catText = emp.category || emp.stress_category || "Unassessed";
+        let riskText = emp.riskStatus || emp.risk_status || "NORMAL";
+        const empId = emp.employeeId || emp.employee_id || "";
+        const empName = emp.name || "Colleague";
 
-        if (score !== null && score !== undefined) {
+        if (score !== null && score !== undefined && score !== "" && !isNaN(score)) {
             let badgeClass = "badge-low";
             if (score >= 80) badgeClass = "badge-critical";
             else if (score >= 65) badgeClass = "badge-high";
@@ -978,7 +1530,7 @@ function renderEmployeeTable(employees) {
         }
 
         // Counselling Status
-        const cStatus = emp.counselling ? emp.counselling.status : "None";
+        const cStatus = (emp.counselling && emp.counselling.status) ? emp.counselling.status : "None";
         const cBadge = cStatus === "In Progress"
             ? `<span class="status-pill status-attention">In Progress</span>`
             : cStatus === "Completed"
@@ -987,15 +1539,15 @@ function renderEmployeeTable(employees) {
 
         return `
             <tr>
-                <td><strong>${emp.employee_id}</strong></td>
-                <td>${emp.name}</td>
+                <td><strong>${empId}</strong></td>
+                <td>${empName}</td>
                 <td>${scoreBadge}</td>
                 <td><strong>${catText}</strong></td>
                 <td>${emp.trend || "Stable"}</td>
                 <td>${riskText}</td>
                 <td>${cBadge}</td>
                 <td>
-                    <button class="action-btn" onclick="openCounsellingModal('${emp.employee_id}')">
+                    <button class="action-btn" onclick="openCounsellingModal('${empId}')">
                         Review & Support 🩺
                     </button>
                 </td>
@@ -1010,11 +1562,13 @@ function filterEmployeeTable() {
     const filterCat = document.getElementById("employeeRiskFilter").value;
 
     const filtered = cachedAuthorityEmployees.filter(emp => {
-        const matchText = emp.name.toLowerCase().includes(query) || emp.employee_id.toLowerCase().includes(query);
+        const empName = (emp.name || "").toLowerCase();
+        const empId = (emp.employeeId || emp.employee_id || "").toLowerCase();
+        const matchText = empName.includes(query) || empId.includes(query);
         if (!matchText) return false;
 
         if (filterCat === "ALL") return true;
-        const score = emp.calibrated_stress_score || 0;
+        const score = emp.calibratedScore !== undefined ? emp.calibratedScore : (emp.calibrated_stress_score || 0);
         if (filterCat === "CRITICAL") return score >= 80;
         if (filterCat === "HIGH") return score >= 65 && score < 80;
         if (filterCat === "MODERATE") return score >= 45 && score < 65;
@@ -1044,14 +1598,17 @@ async function openCounsellingModal(employeeId) {
         if (data.success) {
             const dash = data.dashboard || {};
             const latest = dash.latest || {};
+            const empUser = dash.user || {};
+            const empDisplayName = empUser.name || employeeId;
 
-            document.getElementById("modalEmployeeName").innerText = `${currentEmployee ? currentEmployee.name : 'Employee'}: ${employeeId}`;
-            document.getElementById("modalEmployeeSub").innerText = `Employee ID: ${employeeId}`;
+            document.getElementById("modalEmployeeName").innerText = `${empDisplayName} (${employeeId})`;
+            document.getElementById("modalEmployeeSub").innerText = empUser.email ? `Employee ID: ${employeeId} • ${empUser.email}` : `Employee ID: ${employeeId}`;
 
-            document.getElementById("modalStressScore").innerText = latest.calibrated_stress_score !== undefined ? `${latest.calibrated_stress_score}%` : "N/A";
-            document.getElementById("modalStressCategory").innerText = latest.stress_category || "Unassessed";
+            const scoreVal = latest.calibratedScore !== undefined ? latest.calibratedScore : latest.calibrated_stress_score;
+            document.getElementById("modalStressScore").innerText = (scoreVal !== undefined && scoreVal !== null) ? `${scoreVal}%` : "N/A";
+            document.getElementById("modalStressCategory").innerText = latest.category || latest.stress_category || "Unassessed";
             document.getElementById("modalStressTrend").innerText = dash.trend || "Stable";
-            document.getElementById("modalRiskStatus").innerText = latest.risk_status || "NORMAL";
+            document.getElementById("modalRiskStatus").innerText = latest.riskStatus || latest.risk_status || "NORMAL";
 
             // Render previous counselling records table
             const cList = data.counselling || [];
@@ -1061,11 +1618,11 @@ async function openCounsellingModal(employeeId) {
             } else {
                 cTbody.innerHTML = cList.map(rec => `
                     <tr>
-                        <td>${rec.created_at.split(" ")[0]}</td>
+                        <td>${(rec.created_at || "").split(" ")[0] || "Recent"}</td>
                         <td><span class="status-pill ${rec.status === 'Completed' ? 'status-optimal' : 'status-attention'}">${rec.status}</span></td>
-                        <td><strong>${rec.support_action}</strong></td>
-                        <td>${rec.notes}</td>
-                        <td>${rec.follow_up_date || "N/A"}</td>
+                        <td><strong>${rec.support_action || rec.supportAction || "Support"}</strong></td>
+                        <td>${rec.notes || ""}</td>
+                        <td>${rec.follow_up_date || rec.followUpDate || "N/A"}</td>
                     </tr>
                 `).join("");
             }
@@ -1087,6 +1644,8 @@ document.getElementById("counsellingActionForm").addEventListener("submit", asyn
     const notes = document.getElementById("counsellingNotes").value.trim();
     const followUpDate = document.getElementById("followUpDate").value;
 
+    const authId = (currentAuthority && (currentAuthority.employeeId || currentAuthority.employee_id)) ? (currentAuthority.employeeId || currentAuthority.employee_id) : "Aroghya704";
+
     try {
         const res = await fetch("/api/authority/counselling", {
             method: "POST",
@@ -1097,7 +1656,7 @@ document.getElementById("counsellingActionForm").addEventListener("submit", asyn
                 supportAction,
                 notes,
                 followUpDate,
-                authorityId: currentAuthority ? currentAuthority.employee_id : "Aroghya704"
+                authorityId: authId
             })
         });
         const result = await res.json();
@@ -1211,7 +1770,36 @@ function drawWorkforceTrendCanvas(labels, scores) {
 }
 
 
-// Auto initialize on DOM ready
+// Auto initialize on DOM ready and restore active session if present
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Aroghya AI Stress Monitoring System Initialized.");
+
+    const savedEmp = sessionStorage.getItem("aroghya_current_employee");
+    const savedAuth = sessionStorage.getItem("aroghya_current_authority");
+
+    if (savedEmp) {
+        try {
+            currentEmployee = JSON.parse(savedEmp);
+            if (currentEmployee && (currentEmployee.employeeId || currentEmployee.employee_id)) {
+                currentEmployee.employeeId = currentEmployee.employeeId || currentEmployee.employee_id;
+                currentEmployee.employee_id = currentEmployee.employeeId;
+                loadEmployeeDashboard();
+            }
+        } catch (e) {
+            console.warn("Could not parse saved employee session:", e);
+            sessionStorage.removeItem("aroghya_current_employee");
+        }
+    } else if (savedAuth) {
+        try {
+            currentAuthority = JSON.parse(savedAuth);
+            if (currentAuthority && (currentAuthority.employeeId || currentAuthority.employee_id)) {
+                currentAuthority.employeeId = currentAuthority.employeeId || currentAuthority.employee_id;
+                currentAuthority.employee_id = currentAuthority.employeeId;
+                loadAuthorityDashboard();
+            }
+        } catch (e) {
+            console.warn("Could not parse saved authority session:", e);
+            sessionStorage.removeItem("aroghya_current_authority");
+        }
+    }
 });
